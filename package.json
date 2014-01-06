@@ -1,0 +1,21 @@
+{
+  "name": "global-tunnel",
+  "version": "0.0.0",
+  "description": "Global HTTP & HTTPS tunneling",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "mocha": "~1.16.2"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "http",
+    "https",
+    "tunnel",
+    "global"
+  ],
+  "author": "GoInstant Inc., a salesforce.com company",
+  "license": "BSD-3-Clause"
+}
