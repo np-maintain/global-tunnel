@@ -5,6 +5,10 @@ Uses [`node-tunnel`](https://npmjs.org/package/tunnel) to configure the [global
 [`https`](http://nodejs.org/docs/v0.10.24/api/all.html#all_https_globalagent)
 agents to use an upstream HTTP proxy.
 
+Works transparently to tunnel module using node's default [`http.request()`
+method](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
+as well as the popular [`request` module](https://npmjs.org/package/request).
+
 # Usage
 
 To make all HTTP and HTTPS connections go through an outbound HTTP proxy:
@@ -16,7 +20,7 @@ globalTunnel.initialize({
   host: '127.0.0.1',
   port: 3129,
   sockets: 50 // for each http and https
-}, cb);
+});
 ```
 
 **Please Note:** HTTPS connections are tunnelled insecurely over HTTP, not
@@ -25,8 +29,11 @@ using the `CONNECT` method that a browser would use.
 Then to tear-down the global agent and restore node's default global agents:
 
 ```js
-globalTunnel.end(cb);
+globalTunnel.end();
 ```
+
+Any active connections will be allowed to run to completion, but new
+connections will use the default global agents.
 
 ### Options
 
@@ -36,10 +43,24 @@ globalTunnel.end(cb);
   There are two pools: one for HTTP and one for HTTPS.  Uses node's default (5)
   if falsy.
 
+### Compatibility
+
+Any module that doesn't specify [an explicit `agent:` option to
+`http.request`](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
+will also work with global-tunnel.
+
+The unit tests for this module verify that the popular
+[`request` module](https://npmjs.org/package/request) works with global-tunnel active.
+
 ### Auto-Config
 
 The `http_proxy` environment variable will be used if the first parameter to
 `globalTunnel.initialize` is null or an empty object.
+
+```js
+process.env.http_proxy = 'http://10.0.0.1:3129';
+globalTunnel.initialize();
+```
 
 # Contributing
 

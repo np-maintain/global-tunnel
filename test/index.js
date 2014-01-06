@@ -60,22 +60,20 @@ describe('global-proxy', function() {
 
 
   describe('invalid configs', function() {
-    it('requires a host', function(done) {
+    it('requires a host', function() {
       var conf = { host: null, port: 1234 };
-      globalTunnel.initialize(conf, function(err) {
-        assert.ok(err);
-        assert.equal(err.message, 'upstream proxy host is required');
-        globalTunnel.end(done);
-      });
+      assert.exception(function() {
+        globalTunnel.initialize(conf);
+      }, 'upstream proxy host is required');
+      globalTunnel.end();
     });
 
-    it('requires a port', function(done) {
+    it('requires a port', function() {
       var conf = { host: '127.0.0.1', port: 0 };
-      globalTunnel.initialize(conf, function(err) {
-        assert.ok(err);
-        assert.equal(err.message, 'upstream proxy port is required');
-        globalTunnel.end(done);
-      });
+      assert.exception(function() {
+        globalTunnel.initialize(conf);
+      }, 'upstream proxy port is required');
+      globalTunnel.end();
     });
   });
 
@@ -114,23 +112,23 @@ describe('global-proxy', function() {
   describe('with proxy enabled', function() {
     var conf = { host: '127.0.0.1', port: 3333 };
 
-    before(function(done) {
-      globalTunnel.initialize(conf, done);
+    before(function() {
+      globalTunnel.initialize(conf);
     });
-    after(function(done) {
-      globalTunnel.end(done);
+    after(function() {
+      globalTunnel.end();
     });
 
     proxyEnabledTests();
   });
 
   describe('with empty conf and env var enabled', function() {
-    before(function(done) {
+    before(function() {
       process.env['http_proxy'] = 'http://localhost:1234';
-      globalTunnel.initialize({}, done);
+      globalTunnel.initialize({});
     });
-    after(function(done) {
-      globalTunnel.end(done);
+    after(function() {
+      globalTunnel.end();
     });
 
     proxyEnabledTests();

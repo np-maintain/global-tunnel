@@ -54,7 +54,7 @@ globalTunnel.isProxying = false;
  * @param {int} [conf.sockets] maximum number of sockets to pool (falsy uses
  * node's default).
  */
-globalTunnel.initialize = function(conf, cb) {
+globalTunnel.initialize = function(conf) {
   if (globalTunnel.isProxying) {
     return;
   }
@@ -69,10 +69,10 @@ globalTunnel.initialize = function(conf, cb) {
   }
 
   if (!conf.host) {
-    return cb(new Error('upstream proxy host is required'));
+    throw new Error('upstream proxy host is required');
   }
   if (!conf.port) {
-    return cb(new Error('upstream proxy port is required'));
+    throw new Error('upstream proxy port is required');
   }
 
   var proxyConf = {
@@ -91,15 +91,12 @@ globalTunnel.initialize = function(conf, cb) {
     resetGlobals();
     throw e;
   }
-
-  cb();
 };
 
 /**
  * Restores global http/https agents.
  */
-globalTunnel.end = function(cb) {
+globalTunnel.end = function() {
   resetGlobals();
   globalTunnel.isProxying = false;
-  cb();
 };
