@@ -5,7 +5,7 @@ Uses [`node-tunnel`](https://npmjs.org/package/tunnel) to configure the [global
 [`https`](http://nodejs.org/docs/v0.10.24/api/all.html#all_https_globalagent)
 agents to use an upstream HTTP proxy.
 
-Works transparently to tunnel module using node's default [`http.request()`
+Works transparently to tunnel modules that use node's default [`http.request()`
 method](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
 as well as the popular [`request` module](https://npmjs.org/package/request).
 
