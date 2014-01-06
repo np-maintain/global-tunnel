@@ -105,6 +105,6 @@ please use github directly.
 
 # Legal
 
-&copy; 2013 GoInstant Inc., a salesforce.com company
+&copy; 2014 GoInstant Inc., a salesforce.com company
 
 Licensed under the BSD 3-clause license.
