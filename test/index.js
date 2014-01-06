@@ -12,7 +12,7 @@ var request = require('request');
 var tunnel = require('tunnel');
 
 // deliberate: load after all 3rd party modules
-var upstreamProxy = require('../index');
+var globalTunnel = require('../index');
 
 describe('global-proxy', function() {
   // save and restore http_proxy environment variable (yes, it's lower-case by
@@ -62,32 +62,32 @@ describe('global-proxy', function() {
   describe('invalid configs', function() {
     it('requires a host', function(done) {
       var conf = { host: null, port: 1234 };
-      upstreamProxy.initialize(conf, function(err) {
+      globalTunnel.initialize(conf, function(err) {
         assert.ok(err);
         assert.equal(err.message, 'upstream proxy host is required');
-        upstreamProxy.end(done);
+        globalTunnel.end(done);
       });
     });
 
     it('requires a port', function(done) {
       var conf = { host: '127.0.0.1', port: 0 };
-      upstreamProxy.initialize(conf, function(err) {
+      globalTunnel.initialize(conf, function(err) {
         assert.ok(err);
         assert.equal(err.message, 'upstream proxy port is required');
-        upstreamProxy.end(done);
+        globalTunnel.end(done);
       });
     });
   });
 
   function proxyEnabledTests() {
     it('(got tunnelling set up)', function() {
-      assert.isTrue(upstreamProxy.isProxying);
+      assert.isTrue(globalTunnel.isProxying);
       sinon.assert.calledOnce(tunnel.httpOverHttp);
       sinon.assert.calledOnce(tunnel.httpsOverHttp);
     });
 
     it('will proxy http requests', function(done) {
-      assert.isTrue(upstreamProxy.isProxying);
+      assert.isTrue(globalTunnel.isProxying);
       var dummyCb = sinon.stub();
       request.get('http://example.dev/', dummyCb);
       setImmediate(function() {
@@ -99,7 +99,7 @@ describe('global-proxy', function() {
     });
 
     it('will proxy https requests', function(done) {
-      assert.isTrue(upstreamProxy.isProxying);
+      assert.isTrue(globalTunnel.isProxying);
       var dummyCb = sinon.stub();
       request.get('https://example.dev/', dummyCb);
       setImmediate(function() {
@@ -115,10 +115,10 @@ describe('global-proxy', function() {
     var conf = { host: '127.0.0.1', port: 3333 };
 
     before(function(done) {
-      upstreamProxy.initialize(conf, done);
+      globalTunnel.initialize(conf, done);
     });
     after(function(done) {
-      upstreamProxy.end(done);
+      globalTunnel.end(done);
     });
 
     proxyEnabledTests();
@@ -127,10 +127,10 @@ describe('global-proxy', function() {
   describe('with empty conf and env var enabled', function() {
     before(function(done) {
       process.env['http_proxy'] = 'http://localhost:1234';
-      upstreamProxy.initialize({}, done);
+      globalTunnel.initialize({}, done);
     });
     after(function(done) {
-      upstreamProxy.end(done);
+      globalTunnel.end(done);
     });
 
     proxyEnabledTests();
@@ -139,7 +139,7 @@ describe('global-proxy', function() {
   // deliberately after the block above
   describe('with proxy disabled', function() {
     it('claims to be disabled', function() {
-      assert.isFalse(upstreamProxy.isProxying);
+      assert.isFalse(globalTunnel.isProxying);
     });
 
     it('will NOT proxy http requests', function(done) {
