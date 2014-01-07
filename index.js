@@ -16,12 +16,12 @@ var tunnel = require('tunnel');
 
 // save the original globalAgents for restoration later.
 var ORIGINALS = {
-  http: http.globalAgent,
-  https: https.globalAgent
+  http: _.pick(http, 'globalAgent', 'request'),
+  https: _.pick(https, 'globalAgent', 'request')
 };
 function resetGlobals() {
-  http.globalAgent = ORIGINALS.http;
-  https.globalAgent = ORIGINALS.https;
+  _.assign(http, ORIGINALS.http);
+  _.assign(https, ORIGINALS.https);
 }
 
 /**
@@ -86,6 +86,24 @@ globalTunnel.initialize = function(conf) {
   try {
     http.globalAgent  = tunnel.httpOverHttp(proxyConf);
     https.globalAgent = tunnel.httpsOverHttp(proxyConf);
+    http.request = function(options, callback) {
+      if (typeof options === 'string') {
+        options = urlParse(options);
+      } else {
+        options = _.clone(options);
+      }
+      options.agent = http.globalAgent;
+      return ORIGINALS.http.request.call(http, options, callback);
+    };
+    https.request = function(options, callback) {
+      if (typeof options === 'string') {
+        options = urlParse(options);
+      } else {
+        options = _.clone(options);
+      }
+      options.agent = https.globalAgent;
+      return ORIGINALS.https.request.call(https, options, callback);
+    };
     globalTunnel.isProxying = true;
   } catch (e) {
     resetGlobals();

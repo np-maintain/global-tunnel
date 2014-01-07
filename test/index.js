@@ -107,6 +107,32 @@ describe('global-proxy', function() {
         done();
       });
     });
+
+    it('will proxy raw http requests', function() {
+      var req = http.request({
+        method: 'GET',
+        path: '/',
+        host: 'example.dev'
+      }, function() {});
+      req.end();
+
+      sinon.assert.calledOnce(fakeAgent.addRequest);
+      sinon.assert.notCalled(globalHttpAgent.addRequest);
+      sinon.assert.notCalled(globalHttpsAgent.addRequest);
+    });
+
+    it('will proxy raw https requests', function() {
+      var req = https.request({
+        method: 'GET',
+        path: '/',
+        host: 'example.dev'
+      }, function() {});
+      req.end();
+
+      sinon.assert.calledOnce(fakeAgent.addRequest);
+      sinon.assert.notCalled(globalHttpAgent.addRequest);
+      sinon.assert.notCalled(globalHttpsAgent.addRequest);
+    });
   }
 
   describe('with proxy enabled', function() {
