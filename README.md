@@ -25,9 +25,6 @@ globalTunnel.initialize({
 });
 ```
 
-**Please Note:** HTTPS connections are tunnelled insecurely over HTTP, not
-using the `CONNECT` method that a browser would use.
-
 Then to tear-down the global agent and restore node's default global agents:
 
 ```js
