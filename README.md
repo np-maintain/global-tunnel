@@ -1,6 +1,6 @@
 # global-tunnel
 
-Uses [`node-tunnel`](https://npmjs.org/package/tunnel) to configure the [global
+Configures the [global
 `http`](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_globalagent) and
 [`https`](http://nodejs.org/docs/v0.10.24/api/all.html#all_https_globalagent)
 agents to use an upstream HTTP proxy.
@@ -19,13 +19,17 @@ To make all HTTP and HTTPS connections go through an outbound HTTP proxy:
 var globalTunnel = require('global-tunnel');
 
 globalTunnel.initialize({
-  host: '127.0.0.1',
-  port: 3129,
-  sockets: 50 // for each http and https
+  host: '10.0.0.10',
+  port: 8080,
+  sockets: 50 // optional pool size for each http and https
 });
 ```
 
-Then to tear-down the global agent and restore node's default global agents:
+This will use the `CONNECT` method for HTTPS requests and absolute-URIs for
+HTTP requests, which is how many network proxies are configured.
+
+Optionally, to tear-down the global agent and restore node's default global
+agents:
 
 ```js
 globalTunnel.end();
@@ -34,22 +38,119 @@ globalTunnel.end();
 Any active connections will be allowed to run to completion, but new
 connections will use the default global agents.
 
-### Options
+# Advanced Usage
 
-- `host` the hostname or IP of the HTTP proxy to use
-- `port` the TCP port to use on that proxy
-- `sockets` _(optional)_ maximum number of TCP sockets to use in each pool.
+## Options
+
+The complete list of options to `globalTunnel.initialize`:
+
+- **host** - the hostname or IP of the HTTP proxy to use
+- **port** - the TCP port to use on that proxy
+- **tunnel** _(optional)_ controls what protocols use the `CONNECT` method.  It
+  has three possible values (strings):
+  - **neither** - don't use `CONNECT`; just use absolute URIs
+  - **https** - _(the default)_ only use `CONNECT` for HTTPS requests
+  - **both** - use `CONNECT` for both HTTP and HTTPS requests
+- **protocol** - the protocol that the proxy speaks, either `http:` or `https:`.
+- **sockets** - _(optional)_ maximum number of TCP sockets to use in each pool.
   There are two pools: one for HTTP and one for HTTPS.  Uses node's default (5)
   if falsy.
 
-### Compatibility
+## Variations
 
-Any module that doesn't specify [an explicit `agent:` option to
-`http.request`](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
-will also work with global-tunnel.
+Here's a few interesting variations on the basic config.
 
-The unit tests for this module verify that the popular
-[`request` module](https://npmjs.org/package/request) works with global-tunnel active.
+### Absolute URI Proxies
+
+Another common proxy configuration is one that expects clients to use an
+[absolute URI for the
+Request-URI](https://tools.ietf.org/html/rfc2616#section-5.1.2) for all HTTP
+and HTTPS requests.  This is common for networks that use a proxy for security
+scanning and access control.
+
+What does this mean? It means that instead of ...
+
+```http
+GET / HTTP/1.1
+Host: example.com
+```
+
+... your proxy expects ...
+
+```http
+GET https://example.com/ HTTP/1.1
+```
+
+You'll need to specify `tunnel: 'neither'` if this is the case.  If the proxy
+speaks HTTP (i.e. the connection from node --> proxy is not encrypted):
+
+```js
+globalTunnel.initialize({
+  tunnel: 'neither',
+  host: '10.0.0.10',
+  port: 3128
+});
+```
+
+or, if the proxy speaks HTTPS to your app instead:
+
+```js
+globalTunnel.initialize({
+  tunnel: 'neither',
+  protocol: 'https:'
+  host: '10.0.0.10',
+  port: 3129
+});
+```
+
+### Always-CONNECT Proxies
+
+If the proxy expects you to use the `CONNECT` method for both HTTP and HTTPS
+requests, you'll need the `tunnel: 'both'` option.
+
+What does this mean?  It means that instead of ...
+
+```http
+GET https://example.com/ HTTP/1.1
+```
+
+... your proxy expects ...
+
+```http
+CONNECT example.com:443 HTTP/1.1
+```
+
+Be sure to set the `protocol:` option based on what protocol the proxy speaks.
+
+```js
+globalTunnel.initialize({
+  tunnel: 'both',
+  host: '10.0.0.10',
+  port: 3130
+});
+```
+
+### HTTPS configuration
+
+_EXPERIMENTAL_
+
+If tunnelling both protocols, you can use different HTTPS client configurations
+for the two phases of the connection.
+
+```js
+globalTunnel.initialize({
+  tunnel: 'both',
+  protocol: 'https:'
+  host: '10.0.0.10',
+  port: 3130,
+  proxyHttpsConfig: {
+    // use this config for app -> proxy
+  },
+  originHttpsConfig: {
+    // use this config for proxy -> origin
+  }
+});
+```
 
 ### Auto-Config
 
@@ -60,6 +161,19 @@ The `http_proxy` environment variable will be used if the first parameter to
 process.env.http_proxy = 'http://10.0.0.1:3129';
 globalTunnel.initialize();
 ```
+
+# Compatibility
+
+Any module that doesn't specify [an explicit `agent:` option to
+`http.request`](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
+will also work with global-tunnel.
+
+The unit tests for this module verify that the popular [`request`
+module](https://npmjs.org/package/request) works with global-tunnel active.
+
+For untested modules, it's recommended that you load and initialize
+global-tunnel first.  This way, any copies of `http.globalAgent` will point to
+the right thing.
 
 # Contributing
 
@@ -77,7 +191,6 @@ Download via GitHub and install npm dependencies:
 ```sh
 git clone git@github.com:goinstant/global-tunnel.git
 cd global-tunnel
-
 npm install
 ```
 
