@@ -1,6 +1,6 @@
 {
   "name": "global-tunnel-ng",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Global HTTP & HTTPS tunneling",
   "main": "index.js",
   "repository": {
