@@ -5,7 +5,7 @@ Configures the [global
 [`https`](http://nodejs.org/docs/v0.10.24/api/all.html#all_https_globalagent)
 agents to use an upstream HTTP proxy.
 
-[![Build Status](https://travis-ci.org/goinstant/global-tunnel.png)](https://travis-ci.org/goinstant/global-tunnel)
+[![Build Status](https://travis-ci.org/np-maintain/global-tunnel.png)](https://travis-ci.org/np-maintain/global-tunnel)
 
 Works transparently to tunnel modules that use node's default [`http.request()`
 method](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
@@ -189,7 +189,7 @@ to get you started.
 Download via GitHub and install npm dependencies:
 
 ```sh
-git clone git@github.com:goinstant/global-tunnel.git
+git clone git@github.com:np-maintain/global-tunnel.git
 cd global-tunnel
 npm install
 ```
@@ -207,12 +207,14 @@ npm test
 
 # Support
 
+As this is a hard fork, you may still contact the given contacts below.
+
 Email [GoInstant Support](mailto:support@goinstant.com) or stop by [#goinstant on freenode](irc://irc.freenode.net#goinstant).
 
 For responsible disclosures, email [GoInstant Security](mailto:security@goinstant.com).
 
-To [file a bug](https://github.com/goinstant/global-tunnel/issues) or
-[propose a patch](https://github.com/goinstant/global-tunnel/pulls),
+To [file a bug](https://github.com/np-maintain/global-tunnel/issues) or
+[propose a patch](https://github.com/np-maintain/global-tunnel/pulls),
 please use github directly.
 
 # Legal

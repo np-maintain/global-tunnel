@@ -1,5 +1,5 @@
 {
-  "name": "global-tunnel",
+  "name": "global-tunnel-ng",
   "version": "1.2.0",
   "description": "Global HTTP & HTTPS tunneling",
   "main": "index.js",
