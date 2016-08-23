@@ -11,6 +11,12 @@ Works transparently to tunnel modules that use node's default [`http.request()`
 method](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
 as well as the popular [`request` module](https://npmjs.org/package/request).
 
+# Installation
+
+You can install this package by just executing the following:
+
+    npm install global-tunnel-ng
+
 # Usage
 
 To make all HTTP and HTTPS connections go through an outbound HTTP proxy:
