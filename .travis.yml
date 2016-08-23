@@ -6,7 +6,21 @@ node_js:
   - "5"
   - "6"
 
+cache:
+  npm: true
+  directories:
+    - node_modules
+
+sudo: false
+
+os:
+  - linux
+  - osx
+
 matrix:
   fast_finish: true
   allow_failures:
-  - node_js: "0.11"
+    - node_js: "0.11"
+    - node_js: "4"
+    - node_js: "5"
+    - node_js: "6"
