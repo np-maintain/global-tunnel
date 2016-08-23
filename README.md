@@ -27,6 +27,7 @@ var globalTunnel = require('global-tunnel');
 globalTunnel.initialize({
   host: '10.0.0.10',
   port: 8080,
+  proxyAuth: 'userId:password', // optional authentication
   sockets: 50 // optional pool size for each http and https
 });
 ```
@@ -58,6 +59,7 @@ The complete list of options to `globalTunnel.initialize`:
   - **https** - _(the default)_ only use `CONNECT` for HTTPS requests
   - **both** - use `CONNECT` for both HTTP and HTTPS requests
 - **protocol** - the protocol that the proxy speaks, either `http:` or `https:`.
+- **proxyAuth** - _(optional)_ to authenticate `userId:password`
 - **sockets** - _(optional)_ maximum number of TCP sockets to use in each pool.
   There are two pools: one for HTTP and one for HTTPS.  Uses node's default (5)
   if falsy.
