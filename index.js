@@ -228,6 +228,8 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
 
   if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
     options.port = options.port || 443;
+  } else {
+    options.port = options.port || 80;
   }
 
   return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);

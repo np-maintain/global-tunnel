@@ -42,7 +42,7 @@ describe('global-proxy', function() {
 
   // sinon setup & teardown
   var sandbox;
-  var origHttpCreateConnection, origHttpsCreateConnection;
+  var origHttpCreateConnection;
 
   before(function() {
     sandbox = sinon.sandbox.create();
@@ -68,9 +68,6 @@ describe('global-proxy', function() {
     // instead of doing `net.createConnection`
     origHttpCreateConnection = http.Agent.prototype.createConnection;
     http.Agent.prototype.createConnection = net.createConnection;
-
-    // origHttpsCreateConnection = https.Agent.prototype.createConnection;
-    // https.Agent.prototype.createConnection = tls.connect;
   });
 
   afterEach(function() {
@@ -85,7 +82,6 @@ describe('global-proxy', function() {
   after(function() {
     sandbox.restore();
     http.Agent.prototype.createConnection = origHttpCreateConnection;
-    // https.Agent.prototype.createConnection = origHttpsCreateConnection;
   });
 
   describe('invalid configs', function() {
