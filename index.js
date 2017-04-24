@@ -132,13 +132,7 @@ globalTunnel.initialize = function(conf) {
   }
 };
 
-/**
- * Construct an agent based on:
- * - is the connection to the proxy secure?
- * - is the connection to the origin secure?
- * - the address of the proxy
- */
-globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
+var _makeAgent = function(conf, innerProtocol, useCONNECT) {
   var outerProtocol = conf.protocol;
   innerProtocol = innerProtocol + ':';
 
@@ -188,6 +182,19 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
 };
 
 /**
+ * Construct an agent based on:
+ * - is the connection to the proxy secure?
+ * - is the connection to the origin secure?
+ * - the address of the proxy
+ */
+globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
+  var agent = _makeAgent(conf, innerProtocol, useCONNECT);
+  // set the protocol to match that of the target request type
+  agent.protocol = innerProtocol + ':';
+  return agent;
+}
+
+/**
  * Override for http.request and https.request, makes sure to default the agent
  * to the global agent. Due to how node implements it in lib/http.js, the
  * globalAgent we define won't get used (node uses a module-scoped variable,
@@ -212,7 +219,7 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
     options.agent = httpOrHttps.globalAgent;
   }
 
-  if (options.protocol === 'https:') {
+  if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
     options.port = options.port || 443;
   }
 
