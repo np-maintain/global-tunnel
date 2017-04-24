@@ -54,10 +54,12 @@ describe('global-proxy', function() {
                  https.Agent.prototype.addRequest);
     sandbox.spy(http.Agent.prototype, 'addRequest');
 
-    sandbox.stub(net, 'createConnection').callsFake(function() {
+    // NB: this syntax is deprecated but it's working, unlike the new `callsFake` synatx:
+    // https://github.com/sinonjs/sinon/issues/1341
+    sandbox.stub(net, 'createConnection', function() {
       return new EventEmitter();
     });
-    sandbox.stub(tls, 'connect').callsFake(function() {
+    sandbox.stub(tls, 'connect', function() {
       return new EventEmitter();
     });
 
