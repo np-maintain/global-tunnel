@@ -213,11 +213,18 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
     options = clone(options);
   }
 
-  // A literal `false` means "no agent at all", other falsey values should use
-  // our global agent.
-  if (!options.agent && options.agent !== false) {
-    options.agent = httpOrHttps.globalAgent;
+  var defaultAgent = httpOrHttps.globalAgent;
+  // repeat the logic from node's lib/http.js
+  var agent = options.agent;
+  if (agent === false) {
+    // Node does build the new agent with default props in this case,
+    // but we want to reuse the same global agent
+    agent = defaultAgent;
+  } else if ((agent === null || agent === undefined) &&
+            typeof options.createConnection !== 'function') {
+    agent = defaultAgent;
   }
+  options.agent = agent;
 
   if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
     options.port = options.port || 443;

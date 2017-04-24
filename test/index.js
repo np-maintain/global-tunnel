@@ -247,7 +247,7 @@ describe('global-proxy', function() {
         sinon.assert.calledOnce(agent.addRequest);
       });
 
-      describe('request with `false` agent', function() {
+      describe('request with `null` agent and defined `createConnection`', function() {
         before(function() {
           sinon.stub(http.ClientRequest.prototype, 'onSocket');
         });
@@ -261,7 +261,7 @@ describe('global-proxy', function() {
             method: 'GET',
             path: '/no-agent',
             host: 'example.dev',
-            agent: false,
+            agent: null,
             createConnection: createConnection
           }, function() {});
           req.end();
