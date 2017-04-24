@@ -71,12 +71,7 @@ describe('global-proxy', function() {
   });
 
   afterEach(function() {
-    // would love to sandbox.reset(), but alas: no such thing
-    globalHttpAgent.addRequest.reset();
-    globalHttpsAgent.addRequest.reset();
-    http.Agent.prototype.addRequest.reset();
-    net.createConnection.reset();
-    tls.connect.reset();
+    sandbox.reset();
   });
 
   after(function() {
