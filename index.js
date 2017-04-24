@@ -14,7 +14,6 @@ var urlParse = require('url').parse;
 var pick = require('lodash/pick');
 var assign = require('lodash/assign');
 var clone = require('lodash/clone');
-var isEmpty = require('lodash/isEmpty');
 var tunnel = require('tunnel');
 
 var agents = require('./lib/agents');
@@ -38,12 +37,13 @@ function tryParse(url) {
     return null;
   }
 
-  var conf = {};
   var parsed = urlParse(url);
-  conf.protocol = parsed.protocol;
-  conf.host = parsed.hostname;
-  conf.port = parseInt(parsed.port,10);
-  return conf;
+
+  return {
+    protocol: parsed.protocol,
+    host: parsed.hostname,
+    port: parseInt(parsed.port, 10)
+  };
 }
 
 globalTunnel.isProxying = false;
@@ -65,19 +65,20 @@ globalTunnel.initialize = function(conf) {
     return;
   }
 
-  conf = conf || {};
-  if (typeof conf === 'string') {
+  if (conf && typeof conf === 'string') {
+    // passed string - parse it as a URL
     conf = tryParse(conf);
-  }
-
-  if (isEmpty(conf)) {
+  } else if (conf) {
+    // passed object - take it but clone for future mutations
+    conf = clone(conf)
+  } else {
+    // nothing passed - parse from the env
     conf = tryParse(process.env['http_proxy']);
     if (!conf) {
       globalTunnel.isProxying = false;
       return;
     }
   }
-  conf = clone(conf);
 
   if (!conf.host) {
     throw new Error('upstream proxy host is required');
