@@ -226,9 +226,11 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
   }
   options.agent = agent;
 
+  // set the default port purselves to prevent Node doing it based on the proxy agent protocol
   if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
     options.port = options.port || 443;
-  } else {
+  }
+  if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
     options.port = options.port || 80;
   }
 
