@@ -40,9 +40,9 @@ describe('global-proxy', function() {
   before(saveEnv);
   after(restoreEnv);
 
-
   // sinon setup & teardown
   var sandbox;
+  var origHttpCreateConnection, origHttpsCreateConnection;
 
   before(function() {
     sandbox = sinon.sandbox.create();
@@ -60,6 +60,15 @@ describe('global-proxy', function() {
     sandbox.stub(tls, 'connect').callsFake(function() {
       return new EventEmitter();
     });
+
+    // This is needed as at some point Node HTTP aggent implementation started
+    // plucking the createConnection method from the `net` module
+    // instead of doing `net.createConnection`
+    origHttpCreateConnection = http.Agent.prototype.createConnection;
+    http.Agent.prototype.createConnection = net.createConnection;
+
+    // origHttpsCreateConnection = https.Agent.prototype.createConnection;
+    // https.Agent.prototype.createConnection = tls.connect;
   });
 
   afterEach(function() {
@@ -73,8 +82,9 @@ describe('global-proxy', function() {
 
   after(function() {
     sandbox.restore();
+    http.Agent.prototype.createConnection = origHttpCreateConnection;
+    // https.Agent.prototype.createConnection = origHttpsCreateConnection;
   });
-
 
   describe('invalid configs', function() {
     it('requires a host', function() {
@@ -121,8 +131,7 @@ describe('global-proxy', function() {
         sinon.assert.calledWith(called, sinon.match.has('port', testParams.port));
         sinon.assert.calledWith(called, sinon.match.has('host', '10.2.3.4'));
       } else {
-        sinon.assert.calledWith(called,
-                                testParams.port, '10.2.3.4');
+        sinon.assert.calledWith(called, testParams.port, '10.2.3.4');
       }
 
       var isCONNECT = testParams.connect === 'both' ||
@@ -132,10 +141,8 @@ describe('global-proxy', function() {
         var whichAgent = innerSecure ? https.globalAgent : http.globalAgent;
 
         sinon.assert.calledOnce(whichAgent.request);
-        sinon.assert.calledWith(whichAgent.request,
-                                sinon.match.has('method','CONNECT'));
-        sinon.assert.calledWith(whichAgent.request,
-                                sinon.match.has('path',expectConnect));
+        sinon.assert.calledWith(whichAgent.request, sinon.match.has('method','CONNECT'));
+        sinon.assert.calledWith(whichAgent.request, sinon.match.has('path',expectConnect));
       } else {
         sinon.assert.calledOnce(http.Agent.prototype.addRequest);
         var req = http.Agent.prototype.addRequest.getCall(0).args[0];

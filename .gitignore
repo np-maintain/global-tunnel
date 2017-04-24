@@ -1,5 +1,5 @@
-*node_modules*
+node_modules
 .DS_Store
 npm-debug*
 .*.sw[mnop]
-components/
+.vscode

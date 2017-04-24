@@ -118,7 +118,7 @@ globalTunnel.initialize = function(conf) {
   }
 
   try {
-    http.globalAgent  = globalTunnel._makeAgent(conf, 'http', conf.connectHttp);
+    http.globalAgent = globalTunnel._makeAgent(conf, 'http', conf.connectHttp);
     https.globalAgent = globalTunnel._makeAgent(conf, 'https', conf.connectHttps);
 
     http.request = globalTunnel._defaultedAgentRequest.bind(http, 'http');
@@ -142,7 +142,7 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
   innerProtocol = innerProtocol + ':';
 
   var opts = {
-    proxy: pick(conf, 'host','port','protocol','localAddress','proxyAuth'),
+    proxy: pick(conf, 'host', 'port', 'protocol', 'localAddress', 'proxyAuth'),
     maxSockets: conf.sockets
   };
   opts.proxy.innerProtocol = innerProtocol;
@@ -211,8 +211,9 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
     options.agent = httpOrHttps.globalAgent;
   }
 
-  if( options.protocol === 'https:' )
-      options.port = options.port || 443;
+  if (options.protocol === 'https:') {
+    options.port = options.port || 443;
+  }
 
   return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
 };
