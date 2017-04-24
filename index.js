@@ -11,7 +11,10 @@ var http = require('http');
 var https = require('https');
 var urlParse = require('url').parse;
 
-var _ = require('lodash');
+var pick = require('lodash/pick');
+var assign = require('lodash/assign');
+var clone = require('lodash/clone');
+var isEmpty = require('lodash/isEmpty');
 var tunnel = require('tunnel');
 
 var agents = require('./lib/agents');
@@ -19,12 +22,12 @@ exports.agents = agents;
 
 // save the original globalAgents for restoration later.
 var ORIGINALS = {
-  http: _.pick(http, 'globalAgent', 'request'),
-  https: _.pick(https, 'globalAgent', 'request')
+  http: pick(http, 'globalAgent', 'request'),
+  https: pick(https, 'globalAgent', 'request')
 };
 function resetGlobals() {
-  _.assign(http, ORIGINALS.http);
-  _.assign(https, ORIGINALS.https);
+  assign(http, ORIGINALS.http);
+  assign(https, ORIGINALS.https);
 }
 
 /**
@@ -67,14 +70,14 @@ globalTunnel.initialize = function(conf) {
     conf = tryParse(conf);
   }
 
-  if (_.isEmpty(conf)) {
+  if (isEmpty(conf)) {
     conf = tryParse(process.env['http_proxy']);
     if (!conf) {
       globalTunnel.isProxying = false;
       return;
     }
   }
-  conf = _.clone(conf);
+  conf = clone(conf);
 
   if (!conf.host) {
     throw new Error('upstream proxy host is required');
@@ -139,17 +142,17 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
   innerProtocol = innerProtocol + ':';
 
   var opts = {
-    proxy: _.pick(conf, 'host','port','protocol','localAddress','proxyAuth'),
+    proxy: pick(conf, 'host','port','protocol','localAddress','proxyAuth'),
     maxSockets: conf.sockets
   };
   opts.proxy.innerProtocol = innerProtocol;
 
   if (useCONNECT) {
     if (conf.proxyHttpsOptions) {
-      _.assign(opts.proxy, conf.proxyHttpsOptions);
+      assign(opts.proxy, conf.proxyHttpsOptions);
     }
     if (conf.originHttpsOptions) {
-      _.assign(opts, conf.originHttpsOptions);
+      assign(opts, conf.originHttpsOptions);
     }
 
     if (outerProtocol === 'https:') {
@@ -172,7 +175,7 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
     }
     if (conf.proxyHttpsOptions) {
       // NB: not opts.
-      _.assign(opts, conf.proxyHttpsOptions);
+      assign(opts, conf.proxyHttpsOptions);
     }
 
     if (outerProtocol === 'https:') {
@@ -199,7 +202,7 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
   if (typeof options === 'string') {
     options = urlParse(options);
   } else {
-    options = _.clone(options);
+    options = clone(options);
   }
 
   // A literal `false` means "no agent at all", other falsey values should use

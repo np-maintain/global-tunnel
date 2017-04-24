@@ -54,10 +54,10 @@ describe('global-proxy', function() {
                  https.Agent.prototype.addRequest);
     sandbox.spy(http.Agent.prototype, 'addRequest');
 
-    sandbox.stub(net, 'createConnection', function() {
+    sandbox.stub(net, 'createConnection').callsFake(function() {
       return new EventEmitter();
     });
-    sandbox.stub(tls, 'connect', function() {
+    sandbox.stub(tls, 'connect').callsFake(function() {
       return new EventEmitter();
     });
   });
