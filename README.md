@@ -163,7 +163,7 @@ globalTunnel.initialize({
 ### Auto-Config
 
 The `http_proxy` environment variable will be used if the first parameter to
-`globalTunnel.initialize` is null or an empty object.
+`globalTunnel.initialize` is null-ish.
 
 ```js
 process.env.http_proxy = 'http://10.0.0.1:3129';

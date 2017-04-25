@@ -355,14 +355,14 @@ describe('global-proxy', function() {
       before(function() {
         process.env['http_proxy'] = 'http://10.2.3.4:1234';
       });
-      enabledBlock({}, { secure: false, connect: 'https', port: 1234 });
+      enabledBlock(null, { secure: false, connect: 'https', port: 1234 });
     });
 
     describe('for https', function() {
       before(function() {
         process.env['http_proxy'] = 'https://10.2.3.4:1235';
       });
-      enabledBlock({}, { secure: true, connect: 'https', port: 1235 });
+      enabledBlock(null, { secure: true, connect: 'https', port: 1235 });
     });
   });
 
