@@ -91,56 +91,57 @@ globalTunnel.initialize = function(conf) {
   if (globalTunnel.isProxying) {
     return;
   }
-
-  // This has an effect of also removing the proxy config
-  // from the global env to prevent other modules (like requst) doing
-  // double handling
-  var envVarProxy = findEnvVarProxy();
-
-  if (conf && typeof conf === 'string') {
-    // passed string - parse it as a URL
-    conf = tryParse(conf);
-  } else if (conf) {
-    // passed object - take it but clone for future mutations
-    conf = clone(conf)
-  } else if (envVarProxy) {
-    // nothing passed - parse from the env
-    conf = tryParse(envVarProxy);
-  } else {
-    globalTunnel.isProxying = false;
-    return;
-  }
-
-  if (!conf.host) {
-    throw new Error('upstream proxy host is required');
-  }
-  if (!conf.port) {
-    throw new Error('upstream proxy port is required');
-  }
-
-  if (conf.protocol === undefined) {
-    conf.protocol = 'http:'; // default to proxy speaking http
-  }
-  if (!/:$/.test(conf.protocol)) {
-    conf.protocol = conf.protocol + ':';
-  }
-
-  if (!conf.connect) {
-    conf.connect = 'https'; // just HTTPS by default
-  }
-
-  if (['both', 'neither', 'https'].indexOf(conf.connect) < 0) {
-    throw new Error('valid connect options are "neither", "https", or "both"');
-  }
-
-  var connectHttp = (conf.connect === 'both');
-  var connectHttps = (conf.connect !== 'neither');
-
-  if (conf.httpsOptions) {
-    conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
-  }
-
+  
   try {
+    // This has an effect of also removing the proxy config
+    // from the global env to prevent other modules (like request) doing
+    // double handling
+    var envVarProxy = findEnvVarProxy();
+
+    if (conf && typeof conf === 'string') {
+      // passed string - parse it as a URL
+      conf = tryParse(conf);
+    } else if (conf) {
+      // passed object - take it but clone for future mutations
+      conf = clone(conf)
+    } else if (envVarProxy) {
+      // nothing passed - parse from the env
+      conf = tryParse(envVarProxy);
+    } else {
+      globalTunnel.isProxying = false;
+      return;
+    }
+
+    if (!conf.host) {
+      throw new Error('upstream proxy host is required');
+    }
+    if (!conf.port) {
+      throw new Error('upstream proxy port is required');
+    }
+
+    if (conf.protocol === undefined) {
+      conf.protocol = 'http:'; // default to proxy speaking http
+    }
+    if (!/:$/.test(conf.protocol)) {
+      conf.protocol = conf.protocol + ':';
+    }
+
+    if (!conf.connect) {
+      conf.connect = 'https'; // just HTTPS by default
+    }
+
+    if (['both', 'neither', 'https'].indexOf(conf.connect) < 0) {
+      throw new Error('valid connect options are "neither", "https", or "both"');
+    }
+
+    var connectHttp = (conf.connect === 'both');
+    var connectHttps = (conf.connect !== 'neither');
+
+    if (conf.httpsOptions) {
+      conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
+    }
+
+
     http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
     https.globalAgent = globalTunnel._makeAgent(conf, 'https', connectHttps);
 
@@ -247,7 +248,7 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     }
     options.agent = agent;
 
-    // set the default port purselves to prevent Node doing it based on the proxy agent protocol
+    // set the default port ourselves to prevent Node doing it based on the proxy agent protocol
     if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
       options.port = options.port || 443;
     }
