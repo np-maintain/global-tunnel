@@ -128,33 +128,24 @@ globalTunnel.initialize = function(conf) {
   if (!conf.connect) {
     conf.connect = 'https'; // just HTTPS by default
   }
-  switch(conf.connect) {
-  case 'both':
-    conf.connectHttp = true;
-    conf.connectHttps = true;
-    break;
-  case 'neither':
-    conf.connectHttp = false;
-    conf.connectHttps = false;
-    break;
-  case 'https':
-    conf.connectHttp = false;
-    conf.connectHttps = true;
-    break;
-  default:
+
+  if (['both', 'neither', 'https'].indexOf(conf.connect) < 0) {
     throw new Error('valid connect options are "neither", "https", or "both"');
   }
+
+  var connectHttp = (conf.connect === 'both');
+  var connectHttps = (conf.connect !== 'neither');
 
   if (conf.httpsOptions) {
     conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
   }
 
   try {
-    http.globalAgent = globalTunnel._makeAgent(conf, 'http', conf.connectHttp);
-    https.globalAgent = globalTunnel._makeAgent(conf, 'https', conf.connectHttps);
+    http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
+    https.globalAgent = globalTunnel._makeAgent(conf, 'https', connectHttps);
 
-    http.request = globalTunnel._defaultedAgentRequest.bind(http, 'http');
-    https.request = globalTunnel._defaultedAgentRequest.bind(https, 'https');
+    http.request = globalTunnel._makeRequest(http, 'http');
+    https.request = globalTunnel._makeRequest(https, 'https');
 
     globalTunnel.isProxying = true;
   } catch (e) {
@@ -230,43 +221,42 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
  * to the global agent. Due to how node implements it in lib/http.js, the
  * globalAgent we define won't get used (node uses a module-scoped variable,
  * not the exports field).
- * @param {string} protocol bound during initialization
  * @param {string|object} options http/https request url or options
  * @param {function} [cb]
  * @private
  */
-globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
-  var httpOrHttps = this;
+globalTunnel._makeRequest = function(httpOrHttps, protocol) {
+  return function(options, callback) {
+    if (typeof options === 'string') {
+      options = urlParse(options);
+    } else {
+      options = clone(options);
+    }
 
-  if (typeof options === 'string') {
-    options = urlParse(options);
-  } else {
-    options = clone(options);
-  }
+    // Respect the default agent provided by node's lib/https.js
+    var defaultAgent = options._defaultAgent || httpOrHttps.globalAgent;
+    // repeat the logic from node's lib/http.js
+    var agent = options.agent;
+    if (agent === false) {
+      // Node does build the new agent with default props in this case,
+      // but we want to reuse the same global agent
+      agent = defaultAgent;
+    } else if ((agent === null || agent === undefined) &&
+              typeof options.createConnection !== 'function') {
+      agent = defaultAgent;
+    }
+    options.agent = agent;
 
-  // Respect the default agent provided by node's lib/https.js
-  var defaultAgent = options._defaultAgent || httpOrHttps.globalAgent;
-  // repeat the logic from node's lib/http.js
-  var agent = options.agent;
-  if (agent === false) {
-    // Node does build the new agent with default props in this case,
-    // but we want to reuse the same global agent
-    agent = defaultAgent;
-  } else if ((agent === null || agent === undefined) &&
-            typeof options.createConnection !== 'function') {
-    agent = defaultAgent;
-  }
-  options.agent = agent;
+    // set the default port purselves to prevent Node doing it based on the proxy agent protocol
+    if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
+      options.port = options.port || 443;
+    }
+    if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
+      options.port = options.port || 80;
+    }
 
-  // set the default port purselves to prevent Node doing it based on the proxy agent protocol
-  if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
-    options.port = options.port || 443;
-  }
-  if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
-    options.port = options.port || 80;
-  }
-
-  return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
+    return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
+  };
 };
 
 /**

@@ -2,6 +2,7 @@
 'use strict';
 var assert = require('goinstant-assert');
 var sinon = require('sinon');
+var assign = require('lodash/assign');
 
 // deliberate: node and 3rd party modules before global-tunnel
 var EventEmitter = require('events').EventEmitter;
@@ -275,65 +276,65 @@ describe('global-proxy', function() {
       globalTunnel.end();
     });
 
+    testParams = assign({
+      port: conf && conf.port,
+      secure: conf && conf.protocol === 'https:',
+      connect: conf && conf.connect || 'https'
+    }, testParams);
+
     proxyEnabledTests(testParams);
   }
 
   describe('with http proxy in intercept mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'neither',
       protocol: 'http:',
       host: '10.2.3.4',
       port: 3333
-    };
-    enabledBlock(conf, { secure: false, connect: 'neither', port: 3333 });
+    });
   });
 
   describe('with https proxy in intercept mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'neither',
       protocol: 'https:',
       host: '10.2.3.4',
       port: 3334
-    };
-    enabledBlock(conf, { secure: true, connect: 'neither', port: 3334 });
+    });
   });
 
   describe('with http proxy in CONNECT mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'both',
       protocol: 'http:',
       host: '10.2.3.4',
       port: 3335
-    };
-    enabledBlock(conf, { secure: false, connect: 'both', port: 3335 });
+    });
   });
 
   describe('with https proxy in CONNECT mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'both',
       protocol: 'https:',
       host: '10.2.3.4',
       port: 3336
-    };
-    enabledBlock(conf, { secure: true, connect: 'both', port: 3336 });
+    });
   });
 
   describe('with http proxy in mixed mode', function() {
-    var conf = {
+    enabledBlock({
       protocol: 'http:',
       host: '10.2.3.4',
       port: 3337
-    };
-    enabledBlock(conf, { secure: false, connect: 'https', port: 3337 });
+    });
   });
 
   describe('with https proxy in mixed mode', function() {
-    var conf = {
+    enabledBlock({
       protocol: 'https:',
       host: '10.2.3.4',
       port: 3338
-    };
-    enabledBlock(conf, { secure: true, connect: 'https', port: 3338 });
+    });
   });
 
 
