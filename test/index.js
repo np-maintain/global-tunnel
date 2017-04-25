@@ -338,17 +338,8 @@ describe('global-proxy', function() {
 
 
   describe('using env var', function() {
-    var origHttpProxy;
-
-    before(function() {
-      origHttpProxy = process.env['http_proxy'];
-    })
     after(function() {
-      if (process.env['http_proxy'] === undefined) {
-        delete process.env['http_proxy'];
-      } else {
-        process.env['http_proxy'] = origHttpProxy;
-      }
+      delete process.env['http_proxy'];
     });
 
     describe('for http', function() {
