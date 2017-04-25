@@ -213,7 +213,8 @@ globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
     options = clone(options);
   }
 
-  var defaultAgent = httpOrHttps.globalAgent;
+  // Respect the default agent provided by node's lib/https.js
+  var defaultAgent = options._defaultAgent || httpOrHttps.globalAgent;
   // repeat the logic from node's lib/http.js
   var agent = options.agent;
   if (agent === false) {

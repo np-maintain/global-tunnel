@@ -134,8 +134,8 @@ describe('global-proxy', function() {
         var whichAgent = innerSecure ? https.globalAgent : http.globalAgent;
 
         sinon.assert.calledOnce(whichAgent.request);
-        sinon.assert.calledWith(whichAgent.request, sinon.match.has('method','CONNECT'));
-        sinon.assert.calledWith(whichAgent.request, sinon.match.has('path',expectConnect));
+        sinon.assert.calledWith(whichAgent.request, sinon.match.has('method', 'CONNECT'));
+        sinon.assert.calledWith(whichAgent.request, sinon.match.has('path', expectConnect));
       } else {
         sinon.assert.calledOnce(http.Agent.prototype.addRequest);
         var req = http.Agent.prototype.addRequest.getCall(0).args[0];
@@ -338,8 +338,17 @@ describe('global-proxy', function() {
 
 
   describe('using env var', function() {
+    var origHttpProxy;
+
+    before(function() {
+      origHttpProxy = process.env['http_proxy'];
+    })
     after(function() {
-      delete process.env['http_proxy'];
+      if (process.env['http_proxy'] === undefined) {
+        delete process.env['http_proxy'];
+      } else {
+        process.env['http_proxy'] = origHttpProxy;
+      }
     });
 
     describe('for http', function() {
