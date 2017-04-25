@@ -235,18 +235,9 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     }
 
     // Respect the default agent provided by node's lib/https.js
-    var defaultAgent = options._defaultAgent || httpOrHttps.globalAgent;
-    // repeat the logic from node's lib/http.js
-    var agent = options.agent;
-    if (agent === false) {
-      // Node does build the new agent with default props in this case,
-      // but we want to reuse the same global agent
-      agent = defaultAgent;
-    } else if ((agent === null || agent === undefined) &&
-              typeof options.createConnection !== 'function') {
-      agent = defaultAgent;
+    if (options.agent == null && typeof options.createConnection !== 'function') {
+      options.agent = options._defaultAgent || httpOrHttps.globalAgent;
     }
-    options.agent = agent;
 
     // set the default port ourselves to prevent Node doing it based on the proxy agent protocol
     if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
