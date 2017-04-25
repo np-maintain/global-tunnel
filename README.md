@@ -1,3 +1,6 @@
+[![dependencies Status](https://david-dm.org/np-maintain/global-tunnel/status.svg)](https://david-dm.org/np-maintain/global-tunnel)
+[![devDependencies Status](https://david-dm.org/np-maintain/global-tunnel/dev-status.svg)](https://david-dm.org/np-maintain/global-tunnel?type=dev)
+
 # global-tunnel
 
 Configures the [global
