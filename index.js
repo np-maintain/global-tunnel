@@ -77,6 +77,10 @@ globalTunnel.initialize = function(conf) {
     if (!conf) {
       globalTunnel.isProxying = false;
       return;
+    } else {
+      // TODO: we do it here to prevent double path change by us and the `request` module
+      // Is it too bad to do so?
+      delete process.env['http_proxy'];
     }
   }
 
