@@ -92,22 +92,23 @@ globalTunnel.initialize = function(conf) {
     return;
   }
 
+  // This has an effect of also removing the proxy config
+  // from the global env to prevent other modules (like requst) doing
+  // double handling
+  var envVarProxy = findEnvVarProxy();
+
   if (conf && typeof conf === 'string') {
     // passed string - parse it as a URL
     conf = tryParse(conf);
   } else if (conf) {
     // passed object - take it but clone for future mutations
     conf = clone(conf)
-  } else {
+  } else if (envVarProxy) {
     // nothing passed - parse from the env
-    var envVarProxy = findEnvVarProxy();
-
-    if (!envVarProxy) {
-      globalTunnel.isProxying = false;
-      return;
-    } else {
-      conf = tryParse(envVarProxy);
-    }
+    conf = tryParse(envVarProxy);
+  } else {
+    globalTunnel.isProxying = false;
+    return;
   }
 
   if (!conf.host) {
