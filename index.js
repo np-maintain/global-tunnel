@@ -52,7 +52,8 @@ function tryParse(url) {
   return {
     protocol: parsed.protocol,
     host: parsed.hostname,
-    port: parseInt(parsed.port, 10)
+    port: parseInt(parsed.port, 10),
+    auth: parsed.auth
   };
 }
 
