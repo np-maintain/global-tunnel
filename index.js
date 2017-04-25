@@ -19,14 +19,24 @@ var tunnel = require('tunnel');
 var agents = require('./lib/agents');
 exports.agents = agents;
 
-// save the original globalAgents for restoration later.
+var ENV_VAR_PROXY_SEARCH_ORDER = [ 'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY' ]
+
+// save the original settings for restoration later.
 var ORIGINALS = {
   http: pick(http, 'globalAgent', 'request'),
-  https: pick(https, 'globalAgent', 'request')
+  https: pick(https, 'globalAgent', 'request'),
+  env: pick(process.env, ENV_VAR_PROXY_SEARCH_ORDER)
 };
 function resetGlobals() {
   assign(http, ORIGINALS.http);
   assign(https, ORIGINALS.https);
+  var val;
+  for (var key in ORIGINALS.env) {
+    val = ORIGINALS.env[key];
+    if (val != null) {
+      process.env[key] = val;
+    }
+  }
 }
 
 /**
@@ -47,6 +57,23 @@ function tryParse(url) {
 }
 
 globalTunnel.isProxying = false;
+
+function findEnvVarProxy() {
+  var key, val, result;
+  for (var i = 0; i < ENV_VAR_PROXY_SEARCH_ORDER.length; i++) {
+    key = ENV_VAR_PROXY_SEARCH_ORDER[i];
+    val = process.env[key];
+    if (val != null) {
+      // get the first non-empty
+      result = result || val;
+      // delete all
+      // NB: we do it here to prevent double proxy handling (and for example path change)
+      // by us and the `request` module or other sub-dependencies
+      delete process.env[key];
+    }
+  }
+  return result;
+}
 
 /**
  * Overrides the node http/https `globalAgent`s to use the configured proxy.
@@ -73,14 +100,13 @@ globalTunnel.initialize = function(conf) {
     conf = clone(conf)
   } else {
     // nothing passed - parse from the env
-    conf = tryParse(process.env['http_proxy']);
-    if (!conf) {
+    var envVarProxy = findEnvVarProxy();
+
+    if (!envVarProxy) {
       globalTunnel.isProxying = false;
       return;
     } else {
-      // TODO: we do it here to prevent double path change by us and the `request` module
-      // Is it too bad to do so?
-      delete process.env['http_proxy'];
+      conf = tryParse(envVarProxy);
     }
   }
 
