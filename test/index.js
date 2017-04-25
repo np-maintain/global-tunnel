@@ -112,7 +112,7 @@ describe('global-proxy', function() {
       var innerSecure = (innerProto === 'https:');
 
       var called;
-      if (testParams.secure) {
+      if (testParams.isHttpsProxy) {
         called = tls.connect;
         sinon.assert.notCalled(net.createConnection);
       } else {
@@ -278,7 +278,7 @@ describe('global-proxy', function() {
 
     testParams = assign({
       port: conf && conf.port,
-      secure: conf && conf.protocol === 'https:',
+      isHttpsProxy: conf && conf.protocol === 'https:',
       connect: conf && conf.connect || 'https'
     }, testParams);
 
@@ -347,14 +347,14 @@ describe('global-proxy', function() {
       before(function() {
         process.env['http_proxy'] = 'http://10.2.3.4:1234';
       });
-      enabledBlock(null, { secure: false, connect: 'https', port: 1234 });
+      enabledBlock(null, { isHttpsProxy: false, connect: 'https', port: 1234 });
     });
 
     describe('for https', function() {
       before(function() {
         process.env['http_proxy'] = 'https://10.2.3.4:1235';
       });
-      enabledBlock(null, { secure: true, connect: 'https', port: 1235 });
+      enabledBlock(null, { isHttpsProxy: true, connect: 'https', port: 1235 });
     });
   });
 
