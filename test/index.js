@@ -2,6 +2,7 @@
 'use strict';
 var assert = require('goinstant-assert');
 var sinon = require('sinon');
+var assign = require('lodash/assign');
 
 // deliberate: node and 3rd party modules before global-tunnel
 var EventEmitter = require('events').EventEmitter;
@@ -40,9 +41,9 @@ describe('global-proxy', function() {
   before(saveEnv);
   after(restoreEnv);
 
-
   // sinon setup & teardown
   var sandbox;
+  var origHttpCreateConnection;
 
   before(function() {
     sandbox = sinon.sandbox.create();
@@ -54,27 +55,30 @@ describe('global-proxy', function() {
                  https.Agent.prototype.addRequest);
     sandbox.spy(http.Agent.prototype, 'addRequest');
 
+    // NB: this syntax is deprecated but it's working, unlike the new `callsFake` synatx:
+    // https://github.com/sinonjs/sinon/issues/1341
     sandbox.stub(net, 'createConnection', function() {
       return new EventEmitter();
     });
     sandbox.stub(tls, 'connect', function() {
       return new EventEmitter();
     });
+
+    // This is needed as at some point Node HTTP aggent implementation started
+    // plucking the createConnection method from the `net` module
+    // instead of doing `net.createConnection`
+    origHttpCreateConnection = http.Agent.prototype.createConnection;
+    http.Agent.prototype.createConnection = net.createConnection;
   });
 
   afterEach(function() {
-    // would love to sandbox.reset(), but alas: no such thing
-    globalHttpAgent.addRequest.reset();
-    globalHttpsAgent.addRequest.reset();
-    http.Agent.prototype.addRequest.reset();
-    net.createConnection.reset();
-    tls.connect.reset();
+    sandbox.reset();
   });
 
   after(function() {
     sandbox.restore();
+    http.Agent.prototype.createConnection = origHttpCreateConnection;
   });
-
 
   describe('invalid configs', function() {
     it('requires a host', function() {
@@ -108,7 +112,7 @@ describe('global-proxy', function() {
       var innerSecure = (innerProto === 'https:');
 
       var called;
-      if (testParams.secure) {
+      if (testParams.isHttpsProxy) {
         called = tls.connect;
         sinon.assert.notCalled(net.createConnection);
       } else {
@@ -121,8 +125,7 @@ describe('global-proxy', function() {
         sinon.assert.calledWith(called, sinon.match.has('port', testParams.port));
         sinon.assert.calledWith(called, sinon.match.has('host', '10.2.3.4'));
       } else {
-        sinon.assert.calledWith(called,
-                                testParams.port, '10.2.3.4');
+        sinon.assert.calledWith(called, testParams.port, '10.2.3.4');
       }
 
       var isCONNECT = testParams.connect === 'both' ||
@@ -132,10 +135,8 @@ describe('global-proxy', function() {
         var whichAgent = innerSecure ? https.globalAgent : http.globalAgent;
 
         sinon.assert.calledOnce(whichAgent.request);
-        sinon.assert.calledWith(whichAgent.request,
-                                sinon.match.has('method','CONNECT'));
-        sinon.assert.calledWith(whichAgent.request,
-                                sinon.match.has('path',expectConnect));
+        sinon.assert.calledWith(whichAgent.request, sinon.match.has('method', 'CONNECT'));
+        sinon.assert.calledWith(whichAgent.request, sinon.match.has('path', expectConnect));
       } else {
         sinon.assert.calledOnce(http.Agent.prototype.addRequest);
         var req = http.Agent.prototype.addRequest.getCall(0).args[0];
@@ -240,7 +241,7 @@ describe('global-proxy', function() {
         sinon.assert.calledOnce(agent.addRequest);
       });
 
-      describe('request with `false` agent', function() {
+      describe('request with `null` agent and defined `createConnection`', function() {
         before(function() {
           sinon.stub(http.ClientRequest.prototype, 'onSocket');
         });
@@ -254,7 +255,7 @@ describe('global-proxy', function() {
             method: 'GET',
             path: '/no-agent',
             host: 'example.dev',
-            agent: false,
+            agent: null,
             createConnection: createConnection
           }, function() {});
           req.end();
@@ -275,65 +276,65 @@ describe('global-proxy', function() {
       globalTunnel.end();
     });
 
+    testParams = assign({
+      port: conf && conf.port,
+      isHttpsProxy: conf && conf.protocol === 'https:',
+      connect: conf && conf.connect || 'https'
+    }, testParams);
+
     proxyEnabledTests(testParams);
   }
 
   describe('with http proxy in intercept mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'neither',
       protocol: 'http:',
       host: '10.2.3.4',
       port: 3333
-    };
-    enabledBlock(conf, { secure: false, connect: 'neither', port: 3333 });
+    });
   });
 
   describe('with https proxy in intercept mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'neither',
       protocol: 'https:',
       host: '10.2.3.4',
       port: 3334
-    };
-    enabledBlock(conf, { secure: true, connect: 'neither', port: 3334 });
+    });
   });
 
   describe('with http proxy in CONNECT mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'both',
       protocol: 'http:',
       host: '10.2.3.4',
       port: 3335
-    };
-    enabledBlock(conf, { secure: false, connect: 'both', port: 3335 });
+    });
   });
 
   describe('with https proxy in CONNECT mode', function() {
-    var conf = {
+    enabledBlock({
       connect: 'both',
       protocol: 'https:',
       host: '10.2.3.4',
       port: 3336
-    };
-    enabledBlock(conf, { secure: true, connect: 'both', port: 3336 });
+    });
   });
 
   describe('with http proxy in mixed mode', function() {
-    var conf = {
+    enabledBlock({
       protocol: 'http:',
       host: '10.2.3.4',
       port: 3337
-    };
-    enabledBlock(conf, { secure: false, connect: 'https', port: 3337 });
+    });
   });
 
   describe('with https proxy in mixed mode', function() {
-    var conf = {
+    enabledBlock({
       protocol: 'https:',
       host: '10.2.3.4',
       port: 3338
-    };
-    enabledBlock(conf, { secure: true, connect: 'https', port: 3338 });
+    });
   });
 
 
@@ -346,14 +347,14 @@ describe('global-proxy', function() {
       before(function() {
         process.env['http_proxy'] = 'http://10.2.3.4:1234';
       });
-      enabledBlock({}, { secure: false, connect: 'https', port: 1234 });
+      enabledBlock(null, { isHttpsProxy: false, connect: 'https', port: 1234 });
     });
 
     describe('for https', function() {
       before(function() {
         process.env['http_proxy'] = 'https://10.2.3.4:1235';
       });
-      enabledBlock({}, { secure: true, connect: 'https', port: 1235 });
+      enabledBlock(null, { isHttpsProxy: true, connect: 'https', port: 1235 });
     });
   });
 

@@ -11,20 +11,32 @@ var http = require('http');
 var https = require('https');
 var urlParse = require('url').parse;
 
-var _ = require('lodash');
+var pick = require('lodash/pick');
+var assign = require('lodash/assign');
+var clone = require('lodash/clone');
 var tunnel = require('tunnel');
 
 var agents = require('./lib/agents');
 exports.agents = agents;
 
-// save the original globalAgents for restoration later.
+var ENV_VAR_PROXY_SEARCH_ORDER = [ 'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY' ]
+
+// save the original settings for restoration later.
 var ORIGINALS = {
-  http: _.pick(http, 'globalAgent', 'request'),
-  https: _.pick(https, 'globalAgent', 'request')
+  http: pick(http, 'globalAgent', 'request'),
+  https: pick(https, 'globalAgent', 'request'),
+  env: pick(process.env, ENV_VAR_PROXY_SEARCH_ORDER)
 };
 function resetGlobals() {
-  _.assign(http, ORIGINALS.http);
-  _.assign(https, ORIGINALS.https);
+  assign(http, ORIGINALS.http);
+  assign(https, ORIGINALS.https);
+  var val;
+  for (var key in ORIGINALS.env) {
+    val = ORIGINALS.env[key];
+    if (val != null) {
+      process.env[key] = val;
+    }
+  }
 }
 
 /**
@@ -35,15 +47,34 @@ function tryParse(url) {
     return null;
   }
 
-  var conf = {};
   var parsed = urlParse(url);
-  conf.protocol = parsed.protocol;
-  conf.host = parsed.hostname;
-  conf.port = parseInt(parsed.port,10);
-  return conf;
+
+  return {
+    protocol: parsed.protocol,
+    host: parsed.hostname,
+    port: parseInt(parsed.port, 10),
+    auth: parsed.auth
+  };
 }
 
 globalTunnel.isProxying = false;
+
+function findEnvVarProxy() {
+  var key, val, result;
+  for (var i = 0; i < ENV_VAR_PROXY_SEARCH_ORDER.length; i++) {
+    key = ENV_VAR_PROXY_SEARCH_ORDER[i];
+    val = process.env[key];
+    if (val != null) {
+      // get the first non-empty
+      result = result || val;
+      // delete all
+      // NB: we do it here to prevent double proxy handling (and for example path change)
+      // by us and the `request` module or other sub-dependencies
+      delete process.env[key];
+    }
+  }
+  return result;
+}
 
 /**
  * Overrides the node http/https `globalAgent`s to use the configured proxy.
@@ -61,65 +92,62 @@ globalTunnel.initialize = function(conf) {
   if (globalTunnel.isProxying) {
     return;
   }
+  
+  try {
+    // This has an effect of also removing the proxy config
+    // from the global env to prevent other modules (like request) doing
+    // double handling
+    var envVarProxy = findEnvVarProxy();
 
-  conf = conf || {};
-  if (typeof conf === 'string') {
-    conf = tryParse(conf);
-  }
-
-  if (_.isEmpty(conf)) {
-    conf = tryParse(process.env['http_proxy']);
-    if (!conf) {
+    if (conf && typeof conf === 'string') {
+      // passed string - parse it as a URL
+      conf = tryParse(conf);
+    } else if (conf) {
+      // passed object - take it but clone for future mutations
+      conf = clone(conf)
+    } else if (envVarProxy) {
+      // nothing passed - parse from the env
+      conf = tryParse(envVarProxy);
+    } else {
       globalTunnel.isProxying = false;
       return;
     }
-  }
-  conf = _.clone(conf);
 
-  if (!conf.host) {
-    throw new Error('upstream proxy host is required');
-  }
-  if (!conf.port) {
-    throw new Error('upstream proxy port is required');
-  }
+    if (!conf.host) {
+      throw new Error('upstream proxy host is required');
+    }
+    if (!conf.port) {
+      throw new Error('upstream proxy port is required');
+    }
 
-  if (conf.protocol === undefined) {
-    conf.protocol = 'http:'; // default to proxy speaking http
-  }
-  if (!/:$/.test(conf.protocol)) {
-    conf.protocol = conf.protocol + ':';
-  }
+    if (conf.protocol === undefined) {
+      conf.protocol = 'http:'; // default to proxy speaking http
+    }
+    if (!/:$/.test(conf.protocol)) {
+      conf.protocol = conf.protocol + ':';
+    }
 
-  if (!conf.connect) {
-    conf.connect = 'https'; // just HTTPS by default
-  }
-  switch(conf.connect) {
-  case 'both':
-    conf.connectHttp = true;
-    conf.connectHttps = true;
-    break;
-  case 'neither':
-    conf.connectHttp = false;
-    conf.connectHttps = false;
-    break;
-  case 'https':
-    conf.connectHttp = false;
-    conf.connectHttps = true;
-    break;
-  default:
-    throw new Error('valid connect options are "neither", "https", or "both"');
-  }
+    if (!conf.connect) {
+      conf.connect = 'https'; // just HTTPS by default
+    }
 
-  if (conf.httpsOptions) {
-    conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
-  }
+    if (['both', 'neither', 'https'].indexOf(conf.connect) < 0) {
+      throw new Error('valid connect options are "neither", "https", or "both"');
+    }
 
-  try {
-    http.globalAgent  = globalTunnel._makeAgent(conf, 'http', conf.connectHttp);
-    https.globalAgent = globalTunnel._makeAgent(conf, 'https', conf.connectHttps);
+    var connectHttp = (conf.connect === 'both');
+    var connectHttps = (conf.connect !== 'neither');
 
-    http.request = globalTunnel._defaultedAgentRequest.bind(http, 'http');
-    https.request = globalTunnel._defaultedAgentRequest.bind(https, 'https');
+    if (conf.httpsOptions) {
+      conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
+    }
+
+
+    http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
+    https.globalAgent = globalTunnel._makeAgent(conf, 'https', connectHttps);
+
+    http.request = globalTunnel._makeRequest(http, 'http');
+    https.request = globalTunnel._makeRequest(https, 'https');
 
     globalTunnel.isProxying = true;
   } catch (e) {
@@ -128,28 +156,22 @@ globalTunnel.initialize = function(conf) {
   }
 };
 
-/**
- * Construct an agent based on:
- * - is the connection to the proxy secure?
- * - is the connection to the origin secure?
- * - the address of the proxy
- */
-globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
+var _makeAgent = function(conf, innerProtocol, useCONNECT) {
   var outerProtocol = conf.protocol;
   innerProtocol = innerProtocol + ':';
 
   var opts = {
-    proxy: _.pick(conf, 'host','port','protocol','localAddress','proxyAuth'),
+    proxy: pick(conf, 'host', 'port', 'protocol', 'localAddress', 'proxyAuth'),
     maxSockets: conf.sockets
   };
   opts.proxy.innerProtocol = innerProtocol;
 
   if (useCONNECT) {
     if (conf.proxyHttpsOptions) {
-      _.assign(opts.proxy, conf.proxyHttpsOptions);
+      assign(opts.proxy, conf.proxyHttpsOptions);
     }
     if (conf.originHttpsOptions) {
-      _.assign(opts, conf.originHttpsOptions);
+      assign(opts, conf.originHttpsOptions);
     }
 
     if (outerProtocol === 'https:') {
@@ -172,7 +194,7 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
     }
     if (conf.proxyHttpsOptions) {
       // NB: not opts.
-      _.assign(opts, conf.proxyHttpsOptions);
+      assign(opts, conf.proxyHttpsOptions);
     }
 
     if (outerProtocol === 'https:') {
@@ -184,34 +206,50 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
 };
 
 /**
+ * Construct an agent based on:
+ * - is the connection to the proxy secure?
+ * - is the connection to the origin secure?
+ * - the address of the proxy
+ */
+globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
+  var agent = _makeAgent(conf, innerProtocol, useCONNECT);
+  // set the protocol to match that of the target request type
+  agent.protocol = innerProtocol + ':';
+  return agent;
+}
+
+/**
  * Override for http.request and https.request, makes sure to default the agent
  * to the global agent. Due to how node implements it in lib/http.js, the
  * globalAgent we define won't get used (node uses a module-scoped variable,
  * not the exports field).
- * @param {string} protocol bound during initialization
  * @param {string|object} options http/https request url or options
  * @param {function} [cb]
  * @private
  */
-globalTunnel._defaultedAgentRequest = function(protocol, options, callback) {
-  var httpOrHttps = this;
+globalTunnel._makeRequest = function(httpOrHttps, protocol) {
+  return function(options, callback) {
+    if (typeof options === 'string') {
+      options = urlParse(options);
+    } else {
+      options = clone(options);
+    }
 
-  if (typeof options === 'string') {
-    options = urlParse(options);
-  } else {
-    options = _.clone(options);
-  }
+    // Respect the default agent provided by node's lib/https.js
+    if (options.agent == null && typeof options.createConnection !== 'function') {
+      options.agent = options._defaultAgent || httpOrHttps.globalAgent;
+    }
 
-  // A literal `false` means "no agent at all", other falsey values should use
-  // our global agent.
-  if (!options.agent && options.agent !== false) {
-    options.agent = httpOrHttps.globalAgent;
-  }
-
-  if( options.protocol === 'https:' )
+    // set the default port ourselves to prevent Node doing it based on the proxy agent protocol
+    if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
       options.port = options.port || 443;
+    }
+    if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
+      options.port = options.port || 80;
+    }
 
-  return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
+    return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
+  };
 };
 
 /**

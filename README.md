@@ -56,7 +56,7 @@ The complete list of options to `globalTunnel.initialize`:
 
 - **host** - the hostname or IP of the HTTP proxy to use
 - **port** - the TCP port to use on that proxy
-- **tunnel** _(optional)_ controls what protocols use the `CONNECT` method.  It
+- **connect** _(optional)_ controls what protocols use the `CONNECT` method.  It
   has three possible values (strings):
   - **neither** - don't use `CONNECT`; just use absolute URIs
   - **https** - _(the default)_ only use `CONNECT` for HTTPS requests
@@ -166,7 +166,7 @@ globalTunnel.initialize({
 ### Auto-Config
 
 The `http_proxy` environment variable will be used if the first parameter to
-`globalTunnel.initialize` is null or an empty object.
+`globalTunnel.initialize` is null-ish.
 
 ```js
 process.env.http_proxy = 'http://10.0.0.1:3129';

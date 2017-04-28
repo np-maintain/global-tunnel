@@ -11,14 +11,14 @@
     "node": "0.10.x"
   },
   "dependencies": {
-    "lodash": "1.3.1",
-    "tunnel": "0.0.4"
+    "lodash": "^4.17.0",
+    "tunnel": "^0.0.4"
   },
   "devDependencies": {
-    "mocha": "1.16.2",
-    "goinstant-assert": "1.1.1",
-    "request": "2.30.0",
-    "sinon": "1.7.3"
+    "mocha": "^3.2.0",
+    "goinstant-assert": "^1.1.1",
+    "request": "^2.30.0",
+    "sinon": "^2.1.0"
   },
   "scripts": {
     "test": "mocha test"
