@@ -3,6 +3,7 @@
 var assert = require('goinstant-assert');
 var sinon = require('sinon');
 var assign = require('lodash/assign');
+var pick = require('lodash/pick');
 
 // deliberate: node and 3rd party modules before global-tunnel
 var EventEmitter = require('events').EventEmitter;
@@ -105,6 +106,38 @@ describe('global-proxy', function() {
       globalTunnel.end();
     });
   });
+
+  describe('exposed config', function() {
+    afterEach(function() {
+      globalTunnel.end();
+    });
+
+    it('has the same params as the passed config', function() {
+      var conf = { host: 'proxy.com', port: 1234, proxyAuth: 'user:pwd', protocol: 'https:' };
+      globalTunnel.initialize(conf);
+      assert.deepEqual(conf, pick(globalTunnel.proxyConfig, [
+        'host', 'port', 'proxyAuth', 'protocol'
+      ]));
+    });
+
+    it('has the expected defaults', function() {
+      var conf = { host: 'proxy.com', port: 1234, proxyAuth: 'user:pwd' };
+      globalTunnel.initialize(conf);
+      assert.equal(globalTunnel.proxyConfig.protocol, 'http:');
+    });
+  })
+
+  describe('stringified config', function() {
+    afterEach(function() {
+      globalTunnel.end();
+    });
+
+    it('has the same params as the passed config', function() {
+      var conf = { host: 'proxy.com', port: 1234, proxyAuth: 'user:pwd', protocol: 'https' };
+      globalTunnel.initialize(conf);
+      assert.equal(globalTunnel.proxyUrl, 'https://user:pwd@proxy.com:1234');
+    });
+  })
 
   function proxyEnabledTests(testParams) {
 

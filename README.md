@@ -163,7 +163,7 @@ globalTunnel.initialize({
 });
 ```
 
-### Auto-Config
+## Auto-Config
 
 The `http_proxy` environment variable will be used if the first parameter to
 `globalTunnel.initialize` is null-ish.
@@ -172,6 +172,14 @@ The `http_proxy` environment variable will be used if the first parameter to
 process.env.http_proxy = 'http://10.0.0.1:3129';
 globalTunnel.initialize();
 ```
+
+## Retrieving proxy URL and parsed config
+
+As the module does some extra job determining the proxy (including parsing the environment variables) and does some normalization (like defaulting the protocol to `http:`) it may be useful to retrieve the proxy URL used by the module.
+
+The property `globalTunnel.proxyUrl` is the URL-formatted (including the optional basic auth if provided) proxy config currently in use. It is `null` if the proxy is not currently enabled.
+
+Similarly, the `globalTunnel.proxyConfig` contains the entire parsed and normalized config.
 
 # Compatibility
 

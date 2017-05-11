@@ -10,6 +10,7 @@ exports.constructor = function globalTunnel(){};
 var http = require('http');
 var https = require('https');
 var urlParse = require('url').parse;
+var urlStringify = require('url').format;
 
 var pick = require('lodash/pick');
 var assign = require('lodash/assign');
@@ -53,11 +54,23 @@ function tryParse(url) {
     protocol: parsed.protocol,
     host: parsed.hostname,
     port: parseInt(parsed.port, 10),
-    auth: parsed.auth
+    proxyAuth: parsed.auth
   };
 }
 
+// Stringifies the normalized parsed config
+function stringifyProxy(conf) {
+  return urlStringify({
+    protocol: conf.protocol,
+    hostname: conf.host,
+    port: conf.port,
+    auth: conf.proxyAuth
+  })
+}
+
 globalTunnel.isProxying = false;
+globalTunnel.proxyUrl = null;
+globalTunnel.proxyConfig = null;
 
 function findEnvVarProxy() {
   var key, val, result;
@@ -83,16 +96,22 @@ function findEnvVarProxy() {
  * that's not present, no proxying will be enabled.
  *
  * @param {object} conf
+ * @param {string} [conf.protocol]
  * @param {string} conf.host
  * @param {int} conf.port
- * @param {int} [conf.sockets] maximum number of sockets to pool (falsy uses
- * node's default).
+ * @param {string} [conf.proxyAuth]
+ * @param {string} [conf.connect]
+ * @param {object} [conf.httpsOptions]
+ * @param {int} [conf.sockets] maximum number of sockets to pool
+ * (falsy uses node's default).
  */
 globalTunnel.initialize = function(conf) {
+  // don't do anything if already proxying.
+  // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
     return;
   }
-  
+
   try {
     // This has an effect of also removing the proxy config
     // from the global env to prevent other modules (like request) doing
@@ -109,7 +128,7 @@ globalTunnel.initialize = function(conf) {
       // nothing passed - parse from the env
       conf = tryParse(envVarProxy);
     } else {
-      globalTunnel.isProxying = false;
+      // no config - do nothing
       return;
     }
 
@@ -142,7 +161,6 @@ globalTunnel.initialize = function(conf) {
       conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
     }
 
-
     http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
     https.globalAgent = globalTunnel._makeAgent(conf, 'https', connectHttps);
 
@@ -150,6 +168,8 @@ globalTunnel.initialize = function(conf) {
     https.request = globalTunnel._makeRequest(https, 'https');
 
     globalTunnel.isProxying = true;
+    globalTunnel.proxyUrl = stringifyProxy(conf);
+    globalTunnel.proxyConfig = clone(conf);
   } catch (e) {
     resetGlobals();
     throw e;
@@ -258,4 +278,6 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
 globalTunnel.end = function() {
   resetGlobals();
   globalTunnel.isProxying = false;
+  globalTunnel.proxyUrl = null;
+  globalTunnel.proxyConfig = null;
 };
