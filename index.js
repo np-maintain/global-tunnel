@@ -62,7 +62,7 @@ function tryParse(url) {
 function stringifyProxy(conf) {
   return urlStringify({
     protocol: conf.protocol,
-    host: conf.host,
+    hostname: conf.host,
     port: conf.port,
     auth: conf.proxyAuth
   })
