@@ -70,6 +70,7 @@ function stringifyProxy(conf) {
 
 globalTunnel.isProxying = false;
 globalTunnel.proxyUrl = null;
+globalTunnel.proxyConfig = null;
 
 function findEnvVarProxy() {
   var key, val, result;
@@ -105,6 +106,8 @@ function findEnvVarProxy() {
  * (falsy uses node's default).
  */
 globalTunnel.initialize = function(conf) {
+  // don't do anything if already proxying.
+  // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
     return;
   }
@@ -125,8 +128,7 @@ globalTunnel.initialize = function(conf) {
       // nothing passed - parse from the env
       conf = tryParse(envVarProxy);
     } else {
-      globalTunnel.isProxying = false;
-      globalTunnel.proxyUrl = null;
+      // no config - do nothing
       return;
     }
 
@@ -167,6 +169,7 @@ globalTunnel.initialize = function(conf) {
 
     globalTunnel.isProxying = true;
     globalTunnel.proxyUrl = stringifyProxy(conf);
+    globalTunnel.proxyConfig = clone(conf);
   } catch (e) {
     resetGlobals();
     throw e;
@@ -276,4 +279,5 @@ globalTunnel.end = function() {
   resetGlobals();
   globalTunnel.isProxying = false;
   globalTunnel.proxyUrl = null;
+  globalTunnel.proxyConfig = null;
 };
