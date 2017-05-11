@@ -10,6 +10,7 @@ exports.constructor = function globalTunnel(){};
 var http = require('http');
 var https = require('https');
 var urlParse = require('url').parse;
+var urlStringify = require('url').format;
 
 var pick = require('lodash/pick');
 var assign = require('lodash/assign');
@@ -59,15 +60,12 @@ function tryParse(url) {
 
 // Stringifies the normalized parsed config
 function stringifyProxy(conf) {
-  return [
-    conf.protocol,
-    conf.proxyAuth,
-    conf.proxyAuth ? '@' : null,
-    conf.host,
-    ':',
-    conf.port
-  ].filter(function (x) { return !!x; })
-  .join('');
+  return urlStringify({
+    protocol: conf.protocol,
+    host: conf.host,
+    port: conf.port,
+    auth: conf.proxyAuth
+  })
 }
 
 globalTunnel.isProxying = false;
