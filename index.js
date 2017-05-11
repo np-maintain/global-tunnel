@@ -53,7 +53,7 @@ function tryParse(url) {
     protocol: parsed.protocol,
     host: parsed.hostname,
     port: parseInt(parsed.port, 10),
-    auth: parsed.auth
+    proxyAuth: parsed.auth
   };
 }
 
@@ -92,7 +92,7 @@ globalTunnel.initialize = function(conf) {
   if (globalTunnel.isProxying) {
     return;
   }
-  
+
   try {
     // This has an effect of also removing the proxy config
     // from the global env to prevent other modules (like request) doing
@@ -141,7 +141,6 @@ globalTunnel.initialize = function(conf) {
     if (conf.httpsOptions) {
       conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
     }
-
 
     http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
     https.globalAgent = globalTunnel._makeAgent(conf, 'https', connectHttps);
