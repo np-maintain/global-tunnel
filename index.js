@@ -57,7 +57,21 @@ function tryParse(url) {
   };
 }
 
+// Stringifies the normalized parsed config
+function stringifyProxy(conf) {
+  return [
+    conf.protocol,
+    conf.proxyAuth,
+    conf.proxyAuth ? '@' : null,
+    conf.host,
+    ':',
+    conf.port
+  ].filter(function (x) { return !!x; })
+  .join('');
+}
+
 globalTunnel.isProxying = false;
+globalTunnel.proxyUrl = null;
 
 function findEnvVarProxy() {
   var key, val, result;
@@ -83,10 +97,14 @@ function findEnvVarProxy() {
  * that's not present, no proxying will be enabled.
  *
  * @param {object} conf
+ * @param {string} [conf.protocol]
  * @param {string} conf.host
  * @param {int} conf.port
- * @param {int} [conf.sockets] maximum number of sockets to pool (falsy uses
- * node's default).
+ * @param {string} [conf.proxyAuth]
+ * @param {string} [conf.connect]
+ * @param {object} [conf.httpsOptions]
+ * @param {int} [conf.sockets] maximum number of sockets to pool
+ * (falsy uses node's default).
  */
 globalTunnel.initialize = function(conf) {
   if (globalTunnel.isProxying) {
@@ -110,6 +128,7 @@ globalTunnel.initialize = function(conf) {
       conf = tryParse(envVarProxy);
     } else {
       globalTunnel.isProxying = false;
+      globalTunnel.proxyUrl = null;
       return;
     }
 
@@ -149,6 +168,7 @@ globalTunnel.initialize = function(conf) {
     https.request = globalTunnel._makeRequest(https, 'https');
 
     globalTunnel.isProxying = true;
+    globalTunnel.proxyUrl = stringifyProxy(conf);
   } catch (e) {
     resetGlobals();
     throw e;
@@ -257,4 +277,5 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
 globalTunnel.end = function() {
   resetGlobals();
   globalTunnel.isProxying = false;
+  globalTunnel.proxyUrl = null;
 };
