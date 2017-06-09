@@ -25,7 +25,7 @@ You can install this package by just executing the following:
 To make all HTTP and HTTPS connections go through an outbound HTTP proxy:
 
 ```js
-var globalTunnel = require('global-tunnel');
+var globalTunnel = require('global-tunnel-ng');
 
 globalTunnel.initialize({
   host: '10.0.0.10',
