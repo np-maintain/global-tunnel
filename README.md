@@ -92,12 +92,12 @@ Host: example.com
 GET https://example.com/ HTTP/1.1
 ```
 
-You'll need to specify `tunnel: 'neither'` if this is the case.  If the proxy
+You'll need to specify `connect: 'neither'` if this is the case.  If the proxy
 speaks HTTP (i.e. the connection from node --> proxy is not encrypted):
 
 ```js
 globalTunnel.initialize({
-  tunnel: 'neither',
+  connect: 'neither',
   host: '10.0.0.10',
   port: 3128
 });
@@ -107,7 +107,7 @@ or, if the proxy speaks HTTPS to your app instead:
 
 ```js
 globalTunnel.initialize({
-  tunnel: 'neither',
+  connect: 'neither',
   protocol: 'https:'
   host: '10.0.0.10',
   port: 3129
@@ -117,7 +117,7 @@ globalTunnel.initialize({
 ### Always-CONNECT Proxies
 
 If the proxy expects you to use the `CONNECT` method for both HTTP and HTTPS
-requests, you'll need the `tunnel: 'both'` option.
+requests, you'll need the `connect: 'both'` option.
 
 What does this mean?  It means that instead of ...
 
@@ -135,7 +135,7 @@ Be sure to set the `protocol:` option based on what protocol the proxy speaks.
 
 ```js
 globalTunnel.initialize({
-  tunnel: 'both',
+  connect: 'both',
   host: '10.0.0.10',
   port: 3130
 });
@@ -150,7 +150,7 @@ for the two phases of the connection.
 
 ```js
 globalTunnel.initialize({
-  tunnel: 'both',
+  connect: 'both',
   protocol: 'https:'
   host: '10.0.0.10',
   port: 3130,
