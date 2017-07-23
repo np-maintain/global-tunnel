@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/goinstant/global-tunnel.git"
+    "url": "https://github.com/np-maintain/global-tunnel.git"
   },
   "engines": {
     "node": "0.10.x"
