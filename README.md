@@ -154,10 +154,10 @@ globalTunnel.initialize({
   protocol: 'https:'
   host: '10.0.0.10',
   port: 3130,
-  proxyHttpsConfig: {
+  proxyHttpsOptions: {
     // use this config for app -> proxy
   },
-  originHttpsConfig: {
+  originHttpsOptions: {
     // use this config for proxy -> origin
   }
 });
@@ -173,13 +173,15 @@ process.env.http_proxy = 'http://10.0.0.1:3129';
 globalTunnel.initialize();
 ```
 
-## Retrieving proxy URL and parsed config
+## Retrieving proxy URL, parsed config and proxy status
 
 As the module does some extra job determining the proxy (including parsing the environment variables) and does some normalization (like defaulting the protocol to `http:`) it may be useful to retrieve the proxy URL used by the module.
 
 The property `globalTunnel.proxyUrl` is the URL-formatted (including the optional basic auth if provided) proxy config currently in use. It is `null` if the proxy is not currently enabled.
 
 Similarly, the `globalTunnel.proxyConfig` contains the entire parsed and normalized config.
+
+The property `globalTunnel.isProxying` contains the information about whether the global proxy is on or off.
 
 # Compatibility
 
