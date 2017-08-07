@@ -256,7 +256,7 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     }
 
     // Respect the default agent provided by node's lib/https.js
-    if (options.agent == null && typeof options.createConnection !== 'function') {
+    if (options.agent == null && typeof options.createConnection !== 'function' && options.host) {
       options.agent = options._defaultAgent || httpOrHttps.globalAgent;
     }
 
