@@ -8,7 +8,7 @@
     "url": "https://github.com/np-maintain/global-tunnel.git"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": ">=0.10"
   },
   "dependencies": {
     "lodash": "^4.17.0",
