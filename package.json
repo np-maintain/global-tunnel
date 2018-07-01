@@ -1,6 +1,6 @@
 {
   "name": "global-tunnel-ng",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Global HTTP & HTTPS tunneling",
   "main": "index.js",
   "repository": {
@@ -15,8 +15,8 @@
     "tunnel": "^0.0.5"
   },
   "devDependencies": {
-    "mocha": "^3.2.0",
     "goinstant-assert": "^1.1.1",
+    "mocha": "^3.2.0",
     "request": "^2.83.0",
     "sinon": "^2.1.0"
   },
