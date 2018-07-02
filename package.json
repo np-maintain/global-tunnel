@@ -16,9 +16,9 @@
   },
   "devDependencies": {
     "goinstant-assert": "^1.1.1",
-    "mocha": "^3.2.0",
+    "mocha": "^5.2.0",
     "request": "^2.83.0",
-    "sinon": "^2.1.0"
+    "sinon": "^6.0.1"
   },
   "scripts": {
     "test": "mocha test"
