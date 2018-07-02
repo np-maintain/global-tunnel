@@ -8,7 +8,7 @@ Configures the [global
 [`https`](http://nodejs.org/docs/v0.10.24/api/all.html#all_https_globalagent)
 agents to use an upstream HTTP proxy.
 
-[![Build Status](https://travis-ci.org/np-maintain/global-tunnel.png)](https://travis-ci.org/np-maintain/global-tunnel)
+[![Build Status](https://travis-ci.org/np-maintain/global-tunnel.png)](https://travis-ci.org/np-maintain/global-tunnel) [![Greenkeeper badge](https://badges.greenkeeper.io/np-maintain/global-tunnel.svg)](https://greenkeeper.io/)
 
 Works transparently to tunnel modules that use node's default [`http.request()`
 method](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
