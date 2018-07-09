@@ -16,11 +16,11 @@
     "tunnel": "^0.0.5"
   },
   "devDependencies": {
+    "chai": "^4.1.2",
     "eslint": "^5.1.0",
     "eslint-config-prettier": "^2.9.0",
     "eslint-config-xo": "^0.23.0",
     "eslint-plugin-prettier": "^2.6.2",
-    "goinstant-assert": "^1.1.1",
     "mocha": "^5.2.0",
     "prettier": "^1.13.7",
     "request": "^2.83.0",

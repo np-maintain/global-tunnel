@@ -1,5 +1,5 @@
 'use strict';
-var assert = require('goinstant-assert');
+var assert = require('chai').assert;
 var sinon = require('sinon');
 var assign = require('lodash/assign');
 var pick = require('lodash/pick');
@@ -80,7 +80,7 @@ describe('global-proxy', function() {
   describe('invalid configs', function() {
     it('requires a host', function() {
       var conf = { host: null, port: 1234 };
-      assert.exception(function() {
+      assert.throws(function() {
         globalTunnel.initialize(conf);
       }, 'upstream proxy host is required');
       globalTunnel.end();
@@ -88,7 +88,7 @@ describe('global-proxy', function() {
 
     it('requires a port', function() {
       var conf = { host: '10.2.3.4', port: 0 };
-      assert.exception(function() {
+      assert.throws(function() {
         globalTunnel.initialize(conf);
       }, 'upstream proxy port is required');
       globalTunnel.end();
@@ -96,7 +96,7 @@ describe('global-proxy', function() {
 
     it('clamps tunnel types', function() {
       var conf = { host: '10.2.3.4', port: 1234, connect: 'INVALID' };
-      assert.exception(function() {
+      assert.throws(function() {
         globalTunnel.initialize(conf);
       }, 'valid connect options are "neither", "https", or "both"');
       globalTunnel.end();
