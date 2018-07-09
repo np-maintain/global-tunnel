@@ -47,7 +47,7 @@ describe('global-proxy', function() {
   var origHttpCreateConnection;
 
   before(function() {
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
 
     sandbox.stub(globalHttpAgent, 'addRequest');
     sandbox.stub(globalHttpsAgent, 'addRequest');
@@ -58,10 +58,10 @@ describe('global-proxy', function() {
 
     // NB: this syntax is deprecated but it's working, unlike the new `callsFake` synatx:
     // https://github.com/sinonjs/sinon/issues/1341
-    sandbox.stub(net, 'createConnection', function() {
+    sandbox.stub(net, 'createConnection').callsFake(function() {
       return new EventEmitter();
     });
-    sandbox.stub(tls, 'connect', function() {
+    sandbox.stub(tls, 'connect').callsFake(function() {
       return new EventEmitter();
     });
 
@@ -73,7 +73,7 @@ describe('global-proxy', function() {
   });
 
   afterEach(function() {
-    sandbox.reset();
+    sandbox.resetHistory();
   });
 
   after(function() {
@@ -188,7 +188,7 @@ describe('global-proxy', function() {
 
     var localSandbox;
     beforeEach(function() {
-      localSandbox = sinon.sandbox.create();
+      localSandbox = sinon.createSandbox();
       if (testParams.connect === 'both') {
         localSandbox.spy(http.globalAgent, 'request');
       }
