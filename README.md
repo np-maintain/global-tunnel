@@ -1,5 +1,6 @@
 [![dependencies Status](https://david-dm.org/np-maintain/global-tunnel/status.svg)](https://david-dm.org/np-maintain/global-tunnel)
 [![devDependencies Status](https://david-dm.org/np-maintain/global-tunnel/dev-status.svg)](https://david-dm.org/np-maintain/global-tunnel?type=dev)
+[![Build Status](https://travis-ci.org/np-maintain/global-tunnel.png)](https://travis-ci.org/np-maintain/global-tunnel) [![Greenkeeper badge](https://badges.greenkeeper.io/np-maintain/global-tunnel.svg)](https://greenkeeper.io/)
 
 # global-tunnel
 
@@ -7,8 +8,6 @@ Configures the [global
 `http`](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_globalagent) and
 [`https`](http://nodejs.org/docs/v0.10.24/api/all.html#all_https_globalagent)
 agents to use an upstream HTTP proxy.
-
-[![Build Status](https://travis-ci.org/np-maintain/global-tunnel.png)](https://travis-ci.org/np-maintain/global-tunnel) [![Greenkeeper badge](https://badges.greenkeeper.io/np-maintain/global-tunnel.svg)](https://greenkeeper.io/)
 
 Works transparently to tunnel modules that use node's default [`http.request()`
 method](http://nodejs.org/docs/v0.10.24/api/all.html#all_http_request_options_callback)
