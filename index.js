@@ -1,11 +1,11 @@
-/*jshint node:true */
+/* jshint node:true */
 'use strict';
 /**
  * @fileOverview
  * Global proxy settings.
  */
 var globalTunnel = exports;
-exports.constructor = function globalTunnel(){};
+exports.constructor = function() {};
 
 var http = require('http');
 var https = require('https');
@@ -16,13 +16,20 @@ var pick = require('lodash/pick');
 var assign = require('lodash/assign');
 var clone = require('lodash/clone');
 var tunnel = require('tunnel');
+var npmConfig = require('npm-conf');
 
 var agents = require('./lib/agents');
 exports.agents = agents;
 
-var ENV_VAR_PROXY_SEARCH_ORDER = [ 'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY' ]
+var ENV_VAR_PROXY_SEARCH_ORDER = [
+  'https_proxy',
+  'HTTPS_PROXY',
+  'http_proxy',
+  'HTTP_PROXY'
+];
+var NPM_CONFIG_PROXY_SEARCH_ORDER = ['https-proxy', 'http-proxy', 'proxy'];
 
-// save the original settings for restoration later.
+// Save the original settings for restoration later.
 var ORIGINALS = {
   http: pick(http, 'globalAgent', 'request'),
   https: pick(https, 'globalAgent', 'request'),
@@ -33,9 +40,11 @@ function resetGlobals() {
   assign(https, ORIGINALS.https);
   var val;
   for (var key in ORIGINALS.env) {
-    val = ORIGINALS.env[key];
-    if (val != null) {
-      process.env[key] = val;
+    if (Object.prototype.hasOwnProperty.call(ORIGINALS.env, key)) {
+      val = ORIGINALS.env[key];
+      if (val !== null && val !== undefined) {
+        process.env[key] = val;
+      }
     }
   }
 }
@@ -65,7 +74,7 @@ function stringifyProxy(conf) {
     hostname: conf.host,
     port: conf.port,
     auth: conf.proxyAuth
-  })
+  });
 }
 
 globalTunnel.isProxying = false;
@@ -73,40 +82,60 @@ globalTunnel.proxyUrl = null;
 globalTunnel.proxyConfig = null;
 
 function findEnvVarProxy() {
-  var key, val, result;
-  for (var i = 0; i < ENV_VAR_PROXY_SEARCH_ORDER.length; i++) {
+  var i;
+  var key;
+  var val;
+  var result;
+  for (i = 0; i < ENV_VAR_PROXY_SEARCH_ORDER.length; i++) {
     key = ENV_VAR_PROXY_SEARCH_ORDER[i];
     val = process.env[key];
-    if (val != null) {
-      // get the first non-empty
+    if (val !== null && val !== undefined) {
+      // Get the first non-empty
       result = result || val;
-      // delete all
+      // Delete all
       // NB: we do it here to prevent double proxy handling (and for example path change)
       // by us and the `request` module or other sub-dependencies
       delete process.env[key];
     }
   }
+
+  if (!result) {
+    // __GLOBAL_TUNNEL_DEPENDENCY_NPMCONF__ is a hook to override the npm-conf module
+    var config =
+      (global.__GLOBAL_TUNNEL_DEPENDENCY_NPMCONF__ &&
+        global.__GLOBAL_TUNNEL_DEPENDENCY_NPMCONF__()) ||
+      npmConfig();
+
+    for (i = 0; i < NPM_CONFIG_PROXY_SEARCH_ORDER.length && !val; i++) {
+      val = config.get(NPM_CONFIG_PROXY_SEARCH_ORDER[i]);
+    }
+
+    if (val) {
+      result = val;
+    }
+  }
+
   return result;
 }
 
 /**
  * Overrides the node http/https `globalAgent`s to use the configured proxy.
  *
- * If the config is empty, the `http_proxy` environment variable is checked. If
- * that's not present, no proxying will be enabled.
+ * If the config is empty, the `http_proxy` environment variable is checked.
+ * If that's not present, the NPM `http-proxy` configuration is checked.
+ * If neither are present no proxying will be enabled.
  *
- * @param {object} conf
- * @param {string} [conf.protocol]
- * @param {string} conf.host
- * @param {int} conf.port
- * @param {string} [conf.proxyAuth]
- * @param {string} [conf.connect]
- * @param {object} [conf.httpsOptions]
- * @param {int} [conf.sockets] maximum number of sockets to pool
- * (falsy uses node's default).
+ * @param {object} conf - Options
+ * @param {string} conf.host - Hostname or IP of the HTTP proxy to use
+ * @param {int} conf.port - TCP port of the proxy
+ * @param {string} [conf.protocol='http'] - The protocol of the proxy, 'http' or 'https'
+ * @param {string} [conf.proxyAuth] - Credentials for the proxy in the form userId:password
+ * @param {string} [conf.connect='https'] - Which protocols will use the CONNECT method 'neither', 'https' or 'both'
+ * @param {int} [conf.sockets=5] Maximum number of TCP sockets to use in each pool. There are two different pools for HTTP and HTTPS
+ * @param {object} [conf.httpsOptions] - HTTPS options
  */
 globalTunnel.initialize = function(conf) {
-  // don't do anything if already proxying.
+  // Don't do anything if already proxying.
   // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
     return;
@@ -119,16 +148,16 @@ globalTunnel.initialize = function(conf) {
     var envVarProxy = findEnvVarProxy();
 
     if (conf && typeof conf === 'string') {
-      // passed string - parse it as a URL
+      // Passed string - parse it as a URL
       conf = tryParse(conf);
     } else if (conf) {
-      // passed object - take it but clone for future mutations
-      conf = clone(conf)
+      // Passed object - take it but clone for future mutations
+      conf = clone(conf);
     } else if (envVarProxy) {
-      // nothing passed - parse from the env
+      // Nothing passed - parse from the env
       conf = tryParse(envVarProxy);
     } else {
-      // no config - do nothing
+      // No config - do nothing
       return;
     }
 
@@ -140,25 +169,26 @@ globalTunnel.initialize = function(conf) {
     }
 
     if (conf.protocol === undefined) {
-      conf.protocol = 'http:'; // default to proxy speaking http
+      conf.protocol = 'http:'; // Default to proxy speaking http
     }
     if (!/:$/.test(conf.protocol)) {
-      conf.protocol = conf.protocol + ':';
+      conf.protocol += ':';
     }
 
     if (!conf.connect) {
-      conf.connect = 'https'; // just HTTPS by default
+      conf.connect = 'https'; // Just HTTPS by default
     }
 
     if (['both', 'neither', 'https'].indexOf(conf.connect) < 0) {
       throw new Error('valid connect options are "neither", "https", or "both"');
     }
 
-    var connectHttp = (conf.connect === 'both');
-    var connectHttps = (conf.connect !== 'neither');
+    var connectHttp = conf.connect === 'both';
+    var connectHttps = conf.connect !== 'neither';
 
     if (conf.httpsOptions) {
-      conf.outerHttpsOpts = conf.innerHttpsOpts = conf.httpsOptions;
+      conf.innerHttpsOpts = conf.httpsOptions;
+      conf.outerHttpsOpts = conf.innerHttpsOpts;
     }
 
     http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
@@ -178,7 +208,7 @@ globalTunnel.initialize = function(conf) {
 
 var _makeAgent = function(conf, innerProtocol, useCONNECT) {
   var outerProtocol = conf.protocol;
-  innerProtocol = innerProtocol + ':';
+  innerProtocol += ':';
 
   var opts = {
     proxy: pick(conf, 'host', 'port', 'protocol', 'localAddress', 'proxyAuth'),
@@ -197,32 +227,26 @@ var _makeAgent = function(conf, innerProtocol, useCONNECT) {
     if (outerProtocol === 'https:') {
       if (innerProtocol === 'https:') {
         return tunnel.httpsOverHttps(opts);
-      } else {
-        return tunnel.httpOverHttps(opts);
       }
-    } else {
-      if (innerProtocol === 'https:') {
-        return tunnel.httpsOverHttp(opts);
-      } else {
-        return tunnel.httpOverHttp(opts);
-      }
+      return tunnel.httpOverHttps(opts);
     }
-
-  } else {
-    if (conf.originHttpsOptions) {
-      throw new Error('originHttpsOptions must be combined with a tunnel:true option');
+    if (innerProtocol === 'https:') {
+      return tunnel.httpsOverHttp(opts);
     }
-    if (conf.proxyHttpsOptions) {
-      // NB: not opts.
-      assign(opts, conf.proxyHttpsOptions);
-    }
-
-    if (outerProtocol === 'https:') {
-      return new agents.OuterHttpsAgent(opts);
-    } else {
-      return new agents.OuterHttpAgent(opts);
-    }
+    return tunnel.httpOverHttp(opts);
   }
+  if (conf.originHttpsOptions) {
+    throw new Error('originHttpsOptions must be combined with a tunnel:true option');
+  }
+  if (conf.proxyHttpsOptions) {
+    // NB: not opts.
+    assign(opts, conf.proxyHttpsOptions);
+  }
+
+  if (outerProtocol === 'https:') {
+    return new agents.OuterHttpsAgent(opts);
+  }
+  return new agents.OuterHttpAgent(opts);
 };
 
 /**
@@ -233,10 +257,10 @@ var _makeAgent = function(conf, innerProtocol, useCONNECT) {
  */
 globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
   var agent = _makeAgent(conf, innerProtocol, useCONNECT);
-  // set the protocol to match that of the target request type
+  // Set the protocol to match that of the target request type
   agent.protocol = innerProtocol + ':';
   return agent;
-}
+};
 
 /**
  * Override for http.request and https.request, makes sure to default the agent
@@ -256,11 +280,15 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     }
 
     // Respect the default agent provided by node's lib/https.js
-    if (options.agent == null && typeof options.createConnection !== 'function' && options.host) {
+    if (
+      (options.agent === null || options.agent === undefined) &&
+      typeof options.createConnection !== 'function' &&
+      options.host
+    ) {
       options.agent = options._defaultAgent || httpOrHttps.globalAgent;
     }
 
-    // set the default port ourselves to prevent Node doing it based on the proxy agent protocol
+    // Set the default port ourselves to prevent Node doing it based on the proxy agent protocol
     if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
       options.port = options.port || 443;
     }

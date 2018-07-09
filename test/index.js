@@ -1,11 +1,10 @@
-/*jshint node:true*/
 'use strict';
 var assert = require('goinstant-assert');
 var sinon = require('sinon');
 var assign = require('lodash/assign');
 var pick = require('lodash/pick');
 
-// deliberate: node and 3rd party modules before global-tunnel
+// Deliberate: node and 3rd party modules before global-tunnel
 var EventEmitter = require('events').EventEmitter;
 var net = require('net');
 var tls = require('tls');
@@ -15,7 +14,7 @@ var https = require('https');
 var globalHttpsAgent = https.globalAgent;
 var request = require('request');
 
-// deliberate: load after all 3rd party modules
+// Deliberate: load after all 3rd party modules
 var globalTunnel = require('../index');
 
 function newFakeAgent() {
@@ -27,22 +26,22 @@ function newFakeAgent() {
 
 var origEnv;
 function saveEnv() {
-  origEnv = process.env['http_proxy'];
-  delete process.env['http_proxy'];
+  origEnv = process.env.http_proxy;
+  delete process.env.http_proxy;
 }
 function restoreEnv() {
   if (origEnv !== undefined) {
-    process.env['http_proxy'] = origEnv;
+    process.env.http_proxy = origEnv; // eslint-disable-line camelcase
   }
 }
 
 describe('global-proxy', function() {
-  // save and restore http_proxy environment variable (yes, it's lower-case by
+  // Save and restore http_proxy environment variable (yes, it's lower-case by
   // convention).
   before(saveEnv);
   after(restoreEnv);
 
-  // sinon setup & teardown
+  // Sinon setup & teardown
   var sandbox;
   var origHttpCreateConnection;
 
@@ -52,12 +51,9 @@ describe('global-proxy', function() {
     sandbox.stub(globalHttpAgent, 'addRequest');
     sandbox.stub(globalHttpsAgent, 'addRequest');
 
-    assert.equal(http.Agent.prototype.addRequest,
-                 https.Agent.prototype.addRequest);
+    assert.equal(http.Agent.prototype.addRequest, https.Agent.prototype.addRequest);
     sandbox.spy(http.Agent.prototype, 'addRequest');
 
-    // NB: this syntax is deprecated but it's working, unlike the new `callsFake` synatx:
-    // https://github.com/sinonjs/sinon/issues/1341
     sandbox.stub(net, 'createConnection').callsFake(function() {
       return new EventEmitter();
     });
@@ -113,11 +109,17 @@ describe('global-proxy', function() {
     });
 
     it('has the same params as the passed config', function() {
-      var conf = { host: 'proxy.com', port: 1234, proxyAuth: 'user:pwd', protocol: 'https:' };
+      var conf = {
+        host: 'proxy.com',
+        port: 1234,
+        proxyAuth: 'user:pwd',
+        protocol: 'https:'
+      };
       globalTunnel.initialize(conf);
-      assert.deepEqual(conf, pick(globalTunnel.proxyConfig, [
-        'host', 'port', 'proxyAuth', 'protocol'
-      ]));
+      assert.deepEqual(
+        conf,
+        pick(globalTunnel.proxyConfig, ['host', 'port', 'proxyAuth', 'protocol'])
+      );
     });
 
     it('has the expected defaults', function() {
@@ -125,7 +127,7 @@ describe('global-proxy', function() {
       globalTunnel.initialize(conf);
       assert.equal(globalTunnel.proxyConfig.protocol, 'http:');
     });
-  })
+  });
 
   describe('stringified config', function() {
     afterEach(function() {
@@ -133,16 +135,20 @@ describe('global-proxy', function() {
     });
 
     it('has the same params as the passed config', function() {
-      var conf = { host: 'proxy.com', port: 1234, proxyAuth: 'user:pwd', protocol: 'https' };
+      var conf = {
+        host: 'proxy.com',
+        port: 1234,
+        proxyAuth: 'user:pwd',
+        protocol: 'https'
+      };
       globalTunnel.initialize(conf);
       assert.equal(globalTunnel.proxyUrl, 'https://user:pwd@proxy.com:1234');
     });
-  })
+  });
 
   function proxyEnabledTests(testParams) {
-
     function connected(innerProto) {
-      var innerSecure = (innerProto === 'https:');
+      var innerSecure = innerProto === 'https:';
 
       var called;
       if (testParams.isHttpsProxy) {
@@ -161,15 +167,18 @@ describe('global-proxy', function() {
         sinon.assert.calledWith(called, testParams.port, '10.2.3.4');
       }
 
-      var isCONNECT = testParams.connect === 'both' ||
-        (innerSecure && testParams.connect === 'https');
+      var isCONNECT =
+        testParams.connect === 'both' || (innerSecure && testParams.connect === 'https');
       if (isCONNECT) {
         var expectConnect = 'example.dev:' + (innerSecure ? 443 : 80);
         var whichAgent = innerSecure ? https.globalAgent : http.globalAgent;
 
         sinon.assert.calledOnce(whichAgent.request);
         sinon.assert.calledWith(whichAgent.request, sinon.match.has('method', 'CONNECT'));
-        sinon.assert.calledWith(whichAgent.request, sinon.match.has('path', expectConnect));
+        sinon.assert.calledWith(
+          whichAgent.request,
+          sinon.match.has('path', expectConnect)
+        );
       } else {
         sinon.assert.calledOnce(http.Agent.prototype.addRequest);
         var req = http.Agent.prototype.addRequest.getCall(0).args[0];
@@ -232,11 +241,14 @@ describe('global-proxy', function() {
 
     describe('using raw request interface', function() {
       it('will proxy http requests', function() {
-        var req = http.request({
-          method: 'GET',
-          path: '/raw-http',
-          host: 'example.dev'
-        }, function() {});
+        var req = http.request(
+          {
+            method: 'GET',
+            path: '/raw-http',
+            host: 'example.dev'
+          },
+          function() {}
+        );
         req.end();
 
         connected('http:');
@@ -245,11 +257,14 @@ describe('global-proxy', function() {
       });
 
       it('will proxy https requests', function() {
-        var req = https.request({
-          method: 'GET',
-          path: '/raw-https',
-          host: 'example.dev'
-        }, function() {});
+        var req = https.request(
+          {
+            method: 'GET',
+            path: '/raw-https',
+            host: 'example.dev'
+          },
+          function() {}
+        );
         req.end();
 
         connected('https:');
@@ -259,12 +274,15 @@ describe('global-proxy', function() {
 
       it('request respects explicit agent param', function() {
         var agent = newFakeAgent();
-        var req = http.request({
-          method: 'GET',
-          path: '/raw-http-w-agent',
-          host: 'example.dev',
-          agent: agent
-        }, function() {});
+        var req = http.request(
+          {
+            method: 'GET',
+            path: '/raw-http-w-agent',
+            host: 'example.dev',
+            agent: agent
+          },
+          function() {}
+        );
         req.end();
 
         sinon.assert.notCalled(globalHttpAgent.addRequest);
@@ -284,13 +302,16 @@ describe('global-proxy', function() {
 
         it('uses no agent', function() {
           var createConnection = sinon.stub();
-          var req = http.request({
-            method: 'GET',
-            path: '/no-agent',
-            host: 'example.dev',
-            agent: null,
-            createConnection: createConnection
-          }, function() {});
+          var req = http.request(
+            {
+              method: 'GET',
+              path: '/no-agent',
+              host: 'example.dev',
+              agent: null,
+              createConnection: createConnection
+            },
+            function() {} // eslint-disable-line max-nested-callbacks
+          );
           req.end();
 
           sinon.assert.notCalled(globalHttpAgent.addRequest);
@@ -309,11 +330,14 @@ describe('global-proxy', function() {
       globalTunnel.end();
     });
 
-    testParams = assign({
-      port: conf && conf.port,
-      isHttpsProxy: conf && conf.protocol === 'https:',
-      connect: conf && conf.connect || 'https'
-    }, testParams);
+    testParams = assign(
+      {
+        port: conf && conf.port,
+        isHttpsProxy: conf && conf.protocol === 'https:',
+        connect: (conf && conf.connect) || 'https'
+      },
+      testParams
+    );
 
     proxyEnabledTests(testParams);
   }
@@ -370,29 +394,71 @@ describe('global-proxy', function() {
     });
   });
 
-
   describe('using env var', function() {
     after(function() {
-      delete process.env['http_proxy'];
+      delete process.env.http_proxy;
     });
 
     describe('for http', function() {
       before(function() {
-        process.env['http_proxy'] = 'http://10.2.3.4:1234';
+        process.env.http_proxy = 'http://10.2.3.4:1234'; // eslint-disable-line camelcase
       });
       enabledBlock(null, { isHttpsProxy: false, connect: 'https', port: 1234 });
     });
 
     describe('for https', function() {
       before(function() {
-        process.env['http_proxy'] = 'https://10.2.3.4:1235';
+        process.env.http_proxy = 'https://10.2.3.4:1235'; // eslint-disable-line camelcase
       });
       enabledBlock(null, { isHttpsProxy: true, connect: 'https', port: 1235 });
     });
   });
 
+  describe('using npm config', function() {
+    var expectedProxy = { isHttpsProxy: false, connect: 'https', port: 1234 };
+    var npmConfig = { get: function() {} };
+    var npmConfigStub = sinon.stub(npmConfig, 'get');
 
-  // deliberately after the block above
+    function configNpm(key, value) {
+      return function() {
+        global.__GLOBAL_TUNNEL_DEPENDENCY_NPMCONF__ = function() {
+          return npmConfig;
+        };
+
+        npmConfigStub.withArgs(key).returns(value || 'http://10.2.3.4:1234');
+      };
+    }
+
+    after(function() {
+      global.__GLOBAL_TUNNEL_DEPENDENCY_NPMCONF__ = undefined;
+    });
+
+    describe('https-proxy', function() {
+      before(configNpm('https-proxy'));
+      enabledBlock(null, expectedProxy);
+    });
+
+    describe('http-proxy', function() {
+      before(configNpm('http-proxy'));
+      enabledBlock(null, expectedProxy);
+    });
+
+    describe('proxy', function() {
+      before(configNpm('proxy'));
+      enabledBlock(null, expectedProxy);
+    });
+    describe('order', function() {
+      before(function() {
+        configNpm('proxy')();
+        configNpm('https-proxy', 'http://10.2.3.4:12345')();
+        configNpm('http-proxy')();
+      });
+
+      enabledBlock(null, { isHttpsProxy: false, connect: 'https', port: 12345 });
+    });
+  });
+
+  // Deliberately after the block above
   describe('with proxy disabled', function() {
     it('claims to be disabled', function() {
       assert.isFalse(globalTunnel.isProxying);
