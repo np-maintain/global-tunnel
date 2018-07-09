@@ -1,8 +1,9 @@
 language: node_js
 node_js:
-  - "4"
-  - "6"
   - "node"
+  - "9"
+  - "6"
+  - "4"
 
 cache:
   npm: true
@@ -17,3 +18,10 @@ os:
 
 matrix:
   fast_finish: true
+
+before_install:
+  - npm install -g greenkeeper-lockfile
+  - yarn global add greenkeeper-lockfile@1
+install: npm install && yarn
+before_script: greenkeeper-lockfile-update
+after_script: greenkeeper-lockfile-upload
