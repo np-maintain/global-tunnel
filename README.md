@@ -31,7 +31,7 @@ globalTunnel.initialize({
   port: 8080,
   proxyAuth: 'userId:password', // optional authentication
   sockets: 50 // optional pool size for each http and https
-});
+}[,proxyEnableFunction]);
 ```
 
 This will use the `CONNECT` method for HTTPS requests and absolute-URIs for
@@ -65,6 +65,10 @@ The complete list of options to `globalTunnel.initialize`:
 - **sockets** - _(optional)_ maximum number of TCP sockets to use in each pool.
   There are two pools: one for HTTP and one for HTTPS.  Uses node's default (5)
   if falsy.
+  
+## Enable function
+
+optional second parameter a function which will be called with the request options as the first argument, and if this function returns truthy value the proxy will be enabled for request and if it returns falsey the proxy will be disabled for the request.
 
 ## Variations
 
