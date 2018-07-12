@@ -31,7 +31,7 @@ globalTunnel.initialize({
   port: 8080,
   proxyAuth: 'userId:password', // optional authentication
   sockets: 50 // optional pool size for each http and https
-});
+}[,proxyEnableFunction]);
 ```
 
 This will use the `CONNECT` method for HTTPS requests and absolute-URIs for
