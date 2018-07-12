@@ -65,10 +65,7 @@ The complete list of options to `globalTunnel.initialize`:
 - **sockets** - _(optional)_ maximum number of TCP sockets to use in each pool.
   There are two pools: one for HTTP and one for HTTPS.  Uses node's default (5)
   if falsy.
-  
-## Enable function
-
-optional second parameter a function which will be called with the request options as the first argument, and if this function returns truthy value the proxy will be enabled for request and if it returns falsey the proxy will be disabled for the request.
+- **proxyEnableFunction** - _(optional)_ a function to enable/disable proxy per request will be called with request option as first parameter. if this function return truthy the proxy will be activated for set call. if it returns falsy the proxy will be deactivated for the call.
 
 ## Variations
 
