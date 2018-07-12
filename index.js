@@ -80,7 +80,6 @@ function stringifyProxy(conf) {
 globalTunnel.isProxying = false;
 globalTunnel.proxyUrl = null;
 globalTunnel.proxyConfig = null;
-globalTunnel.proxyEnableFunction = null;
 
 function findEnvVarProxy() {
   var i;
@@ -135,7 +134,7 @@ function findEnvVarProxy() {
  * @param {int} [conf.sockets=5] Maximum number of TCP sockets to use in each pool. There are two different pools for HTTP and HTTPS
  * @param {object} [conf.httpsOptions] - HTTPS options
  */
-globalTunnel.initialize = function(conf, proxyEnableFunction) {
+globalTunnel.initialize = function(conf) {
   // Don't do anything if already proxying.
   // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
@@ -322,5 +321,4 @@ globalTunnel.end = function() {
   globalTunnel.isProxying = false;
   globalTunnel.proxyUrl = null;
   globalTunnel.proxyConfig = null;
-  globalTunnel.proxyEnableFunction = null;
 };
