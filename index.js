@@ -80,7 +80,6 @@ function stringifyProxy(conf) {
 globalTunnel.isProxying = false;
 globalTunnel.proxyUrl = null;
 globalTunnel.proxyConfig = null;
-globalTunnel.proxyEnableFunction = null;
 
 function findEnvVarProxy() {
   var i;
@@ -135,7 +134,7 @@ function findEnvVarProxy() {
  * @param {int} [conf.sockets=5] Maximum number of TCP sockets to use in each pool. There are two different pools for HTTP and HTTPS
  * @param {object} [conf.httpsOptions] - HTTPS options
  */
-globalTunnel.initialize = function(conf, proxyEnableFunction) {
+globalTunnel.initialize = function(conf) {
   // Don't do anything if already proxying.
   // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
@@ -200,8 +199,13 @@ globalTunnel.initialize = function(conf, proxyEnableFunction) {
 
     globalTunnel.isProxying = true;
     globalTunnel.proxyUrl = stringifyProxy(conf);
+
+    var proxyEnableFunction = conf.proxyEnableFunction;
+    conf.proxyEnableFunction = null;
     globalTunnel.proxyConfig = clone(conf);
-    globalTunnel.proxyEnableFunction = proxyEnableFunction;
+    globalTunnel.proxyConfig.proxyEnableFunction = proxyEnableFunction;
+    conf.proxyEnableFunction = proxyEnableFunction;
+
   } catch (e) {
     resetGlobals();
     throw e;
@@ -246,9 +250,9 @@ var _makeAgent = function(conf, innerProtocol, useCONNECT) {
   }
 
   if (outerProtocol === 'https:') {
-    return new agents.OuterHttpsAgent(opts);
+    return new agents.OuterHttpsAgent(opts, globalTunnel);
   }
-  return new agents.OuterHttpAgent(opts);
+  return new agents.OuterHttpAgent(opts, globalTunnel);
 };
 
 /**
@@ -281,7 +285,7 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
       options = clone(options);
     }
     
-    var doProxy = !globalTunnel.proxyEnableFunction || globalTunnel.proxyEnableFunction(options);
+    var doProxy = !globalTunnel.proxyConfig.proxyEnableFunction || globalTunnel.proxyConfig.proxyEnableFunction(options);
 
     // Respect the default agent provided by node's lib/https.js
     if (
@@ -290,6 +294,9 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
       options.host
     ) {
       options.agent = options._defaultAgent || (doProxy ? httpOrHttps.globalAgent : ORIGINALS[protocol].globalAgent);
+    }
+    else if(!doProxy && options.agent === httpOrHttps.globalAgent) {
+      options.agent = ORIGINALS[protocol].globalAgent;
     }
 
     if(doProxy) {
@@ -314,5 +321,4 @@ globalTunnel.end = function() {
   globalTunnel.isProxying = false;
   globalTunnel.proxyUrl = null;
   globalTunnel.proxyConfig = null;
-  globalTunnel.proxyEnableFunction = null;
 };
