@@ -214,6 +214,7 @@ globalTunnel.initialize = function(conf) {
 };
 
 var _makeAgent = function(conf, innerProtocol, useCONNECT) {
+  debug('Creating proxying agent');
   var outerProtocol = conf.protocol;
   innerProtocol += ':';
 
@@ -280,7 +281,6 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
  */
 globalTunnel._makeRequest = function(httpOrHttps, protocol) {
   return function(options, callback) {
-    debug('Requesting to ' + options.protocol + '//' + options.host + ':' + options.port);
     if (typeof options === 'string') {
       options = urlParse(options);
     } else {
