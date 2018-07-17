@@ -281,6 +281,7 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
  */
 globalTunnel._makeRequest = function(httpOrHttps, protocol) {
   return function(options, callback) {
+    debug('Requesting');
     if (typeof options === 'string') {
       options = urlParse(options);
     } else {
