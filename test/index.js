@@ -397,6 +397,7 @@ describe('global-proxy', function() {
   describe('using env var', function() {
     after(function() {
       delete process.env.http_proxy;
+      assert.isUndefined(process.env.http_proxy);
     });
 
     describe('for http', function() {
