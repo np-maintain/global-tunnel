@@ -457,6 +457,7 @@ describe('global-proxy', function() {
   describe('using env var', function() {
     after(function() {
       delete process.env.http_proxy;
+      assert.isUndefined(process.env.http_proxy);
     });
 
     describe('for http', function() {
@@ -515,6 +516,19 @@ describe('global-proxy', function() {
       });
 
       enabledBlock(null, { isHttpsProxy: false, connect: 'https', port: 12345 });
+    });
+
+    describe('also using env var', function () {
+      before(function() {
+        configNpm('proxy')();
+        process.env.http_proxy = 'http://10.2.3.4:1234'; // eslint-disable-line camelcase
+      });
+
+      after(function() {
+        delete process.env.http_proxy;
+      });
+
+      enabledBlock(null, expectedProxy);
     });
   });
 
