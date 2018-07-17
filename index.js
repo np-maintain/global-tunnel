@@ -11,6 +11,7 @@ var http = require('http');
 var https = require('https');
 var urlParse = require('url').parse;
 var urlStringify = require('url').format;
+var debug = require('debug')('global-tunnel');
 
 var pick = require('lodash/pick');
 var assign = require('lodash/assign');
@@ -96,6 +97,7 @@ function findEnvVarProxy() {
       // NB: we do it here to prevent double proxy handling (and for example path change)
       // by us and the `request` module or other sub-dependencies
       delete process.env[key];
+      debug('Found proxy in environment variable ' + ENV_VAR_PROXY_SEARCH_ORDER[i]);
     }
   }
 
@@ -111,6 +113,7 @@ function findEnvVarProxy() {
     }
 
     if (val) {
+      debug('Found proxy in npm config ' + NPM_CONFIG_PROXY_SEARCH_ORDER[i]);
       result = val;
     }
   }
@@ -138,6 +141,7 @@ globalTunnel.initialize = function(conf) {
   // Don't do anything if already proxying.
   // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
+    debug('Already proxying');
     return;
   }
 
@@ -157,9 +161,12 @@ globalTunnel.initialize = function(conf) {
       // Nothing passed - parse from the env
       conf = tryParse(envVarProxy);
     } else {
+      debug('No configuration found, not proxying');
       // No config - do nothing
       return;
     }
+
+    debug('Proxy configuration to be used is ' + JSON.stringify(conf, null, 2));
 
     if (!conf.host) {
       throw new Error('upstream proxy host is required');
