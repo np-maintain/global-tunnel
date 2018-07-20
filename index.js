@@ -292,7 +292,7 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     if (
       (options.agent === null || options.agent === undefined) &&
       typeof options.createConnection !== 'function' &&
-      options.host
+      (options.host || options.hostname) 
     ) {
       options.agent = options._defaultAgent || httpOrHttps.globalAgent;
     }
