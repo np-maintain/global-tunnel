@@ -11,7 +11,6 @@ var http = require('http');
 var https = require('https');
 var urlParse = require('url').parse;
 var urlStringify = require('url').format;
-var debug = require('debug')('global-tunnel');
 
 var pick = require('lodash/pick');
 var assign = require('lodash/assign');
@@ -36,6 +35,21 @@ var ORIGINALS = {
   https: pick(https, 'globalAgent', 'request'),
   env: pick(process.env, ENV_VAR_PROXY_SEARCH_ORDER)
 };
+
+var loggingEnabled =
+  process &&
+  process.env &&
+  process.env.DEBUG &&
+  process.env.DEBUG.toLowerCase().indexOf('global-tunnel') !== -1 &&
+  console &&
+  typeof console.log === 'function';
+
+function log(message) {
+  if (loggingEnabled) {
+    console.log('DEBUG global-tunnel: ' + message);
+  }
+}
+
 function resetGlobals() {
   assign(http, ORIGINALS.http);
   assign(https, ORIGINALS.https);
@@ -97,7 +111,7 @@ function findEnvVarProxy() {
       // NB: we do it here to prevent double proxy handling (and for example path change)
       // by us and the `request` module or other sub-dependencies
       delete process.env[key];
-      debug('Found proxy in environment variable ' + ENV_VAR_PROXY_SEARCH_ORDER[i]);
+      log('Found proxy in environment variable ' + ENV_VAR_PROXY_SEARCH_ORDER[i]);
     }
   }
 
@@ -113,7 +127,7 @@ function findEnvVarProxy() {
     }
 
     if (val) {
-      debug('Found proxy in npm config ' + NPM_CONFIG_PROXY_SEARCH_ORDER[i]);
+      log('Found proxy in npm config ' + NPM_CONFIG_PROXY_SEARCH_ORDER[i]);
       result = val;
     }
   }
@@ -141,7 +155,7 @@ globalTunnel.initialize = function(conf) {
   // Don't do anything if already proxying.
   // To change the settings `.end()` should be called first.
   if (globalTunnel.isProxying) {
-    debug('Already proxying');
+    log('Already proxying');
     return;
   }
 
@@ -161,12 +175,12 @@ globalTunnel.initialize = function(conf) {
       // Nothing passed - parse from the env
       conf = tryParse(envVarProxy);
     } else {
-      debug('No configuration found, not proxying');
+      log('No configuration found, not proxying');
       // No config - do nothing
       return;
     }
 
-    debug('Proxy configuration to be used is ' + JSON.stringify(conf, null, 2));
+    log('Proxy configuration to be used is ' + JSON.stringify(conf, null, 2));
 
     if (!conf.host) {
       throw new Error('upstream proxy host is required');
@@ -214,7 +228,7 @@ globalTunnel.initialize = function(conf) {
 };
 
 var _makeAgent = function(conf, innerProtocol, useCONNECT) {
-  debug('Creating proxying agent');
+  log('Creating proxying agent');
   var outerProtocol = conf.protocol;
   innerProtocol += ':';
 
@@ -281,7 +295,6 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
  */
 globalTunnel._makeRequest = function(httpOrHttps, protocol) {
   return function(options, callback) {
-    debug('Requesting');
     if (typeof options === 'string') {
       options = urlParse(options);
     } else {
@@ -292,7 +305,7 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     if (
       (options.agent === null || options.agent === undefined) &&
       typeof options.createConnection !== 'function' &&
-      (options.host || options.hostname) 
+      (options.host || options.hostname)
     ) {
       options.agent = options._defaultAgent || httpOrHttps.globalAgent;
     }
@@ -304,6 +317,15 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
     if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
       options.port = options.port || 80;
     }
+
+    log(
+      'Requesting to ' +
+        (options.protocol || protocol) +
+        '//' +
+        (options.host || options.hostname) +
+        ':' +
+        options.port
+    );
 
     return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
   };
