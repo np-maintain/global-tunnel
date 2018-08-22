@@ -107,7 +107,7 @@ or, if the proxy speaks HTTPS to your app instead:
 ```js
 globalTunnel.initialize({
   connect: 'neither',
-  protocol: 'https:'
+  protocol: 'https:',
   host: '10.0.0.10',
   port: 3129
 });
