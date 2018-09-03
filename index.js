@@ -17,6 +17,7 @@ var assign = require('lodash/assign');
 var clone = require('lodash/clone');
 var tunnel = require('tunnel');
 var npmConfig = require('npm-conf');
+var encodeUrl = require('encodeurl');
 
 var agents = require('./lib/agents');
 exports.agents = agents;
@@ -84,12 +85,14 @@ function tryParse(url) {
 
 // Stringifies the normalized parsed config
 function stringifyProxy(conf) {
-  return urlStringify({
-    protocol: conf.protocol,
-    hostname: conf.host,
-    port: conf.port,
-    auth: conf.proxyAuth
-  });
+  return encodeUrl(
+    urlStringify({
+      protocol: conf.protocol,
+      hostname: conf.host,
+      port: conf.port,
+      auth: conf.proxyAuth
+    })
+  );
 }
 
 globalTunnel.isProxying = false;
