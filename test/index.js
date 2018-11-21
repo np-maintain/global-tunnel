@@ -24,6 +24,17 @@ function newFakeAgent() {
   return fakeAgent;
 }
 
+// This function replaces 'host' by 'hostname' in the options for http.request()
+// background: http.request() allows to use either 'host' or 'hostname' to be used,
+// both needs to be tested
+function replaceHostByHostname(useHostname, options) {
+  if (useHostname) {
+    options.hostname = options.host;
+    delete options.host;
+  }
+  return options;
+}
+
 var origEnv;
 function saveEnv() {
   origEnv = process.env.http_proxy;
@@ -143,6 +154,17 @@ describe('global-proxy', function() {
       };
       globalTunnel.initialize(conf);
       assert.equal(globalTunnel.proxyUrl, 'https://user:pwd@proxy.com:1234');
+    });
+
+    it('encodes url', function() {
+      var conf = {
+        host: 'proxy.com',
+        port: 1234,
+        proxyAuth: 'user:4P@S$W0_r-D',
+        protocol: 'https'
+      };
+      globalTunnel.initialize(conf);
+      assert.equal(globalTunnel.proxyUrl, 'https://user:4P%40S%24W0_r-D@proxy.com:1234');
     });
   });
 
@@ -283,11 +305,11 @@ describe('global-proxy', function() {
     describe('using raw request interface', function() {
       it('will' + (testParams.proxyEnableFunction === false ? ' not' : '') + ' proxy http requests', function() {
         var req = http.request(
-          {
+          replaceHostByHostname(useHostname, {
             method: 'GET',
             path: '/raw-http',
             host: 'example.dev'
-          },
+          }),
           function() {}
         );
         req.end();
@@ -300,15 +322,21 @@ describe('global-proxy', function() {
           sinon.assert.calledOnce(globalHttpAgent.addRequest);
         }
         sinon.assert.notCalled(globalHttpsAgent.addRequest);
+      }
+      it('will proxy http requests (`host`)', function() {
+        rawRequest(false);
+      });
+      it('will proxy http requests (`hostname`)', function() {
+        rawRequest(true);
       });
 
       it('will' + (testParams.proxyEnableFunction === false ? ' not' : '') + ' proxy https requests', function() {
         var req = https.request(
-          {
+          replaceHostByHostname(false, {
             method: 'GET',
             path: '/raw-https',
             host: 'example.dev'
-          },
+          }),
           function() {}
         );
         req.end();
@@ -326,12 +354,12 @@ describe('global-proxy', function() {
       it('request respects explicit agent param', function() {
         var agent = newFakeAgent();
         var req = http.request(
-          {
+          replaceHostByHostname(false, {
             method: 'GET',
             path: '/raw-http-w-agent',
             host: 'example.dev',
             agent: agent
-          },
+          }),
           function() {}
         );
         req.end();
@@ -351,16 +379,16 @@ describe('global-proxy', function() {
           http.ClientRequest.prototype.onSocket.restore();
         });
 
-        it('uses no agent', function() {
+        function noAgent(useHostname) {
           var createConnection = sinon.stub();
           var req = http.request(
-            {
+            replaceHostByHostname(useHostname, {
               method: 'GET',
               path: '/no-agent',
               host: 'example.dev',
               agent: null,
               createConnection: createConnection
-            },
+            }),
             function() {} // eslint-disable-line max-nested-callbacks
           );
           req.end();
@@ -368,6 +396,12 @@ describe('global-proxy', function() {
           sinon.assert.notCalled(globalHttpAgent.addRequest);
           sinon.assert.notCalled(globalHttpsAgent.addRequest);
           sinon.assert.calledOnce(createConnection);
+        }
+        it('uses no agent (`host`)', function() {
+          noAgent(false);
+        });
+        it('uses no agent (`hostname`)', function() {
+          noAgent(true);
         });
       });
     });
@@ -518,7 +552,7 @@ describe('global-proxy', function() {
       enabledBlock(null, { isHttpsProxy: false, connect: 'https', port: 12345 });
     });
 
-    describe('also using env var', function () {
+    describe('also using env var', function() {
       before(function() {
         configNpm('proxy')();
         process.env.http_proxy = 'http://10.2.3.4:1234'; // eslint-disable-line camelcase
