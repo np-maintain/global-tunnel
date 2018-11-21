@@ -4,3 +4,4 @@ npm-debug*
 .*.sw[mnop]
 .vscode
 yarn.lock
+package-lock.json
