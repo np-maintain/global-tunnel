@@ -20,7 +20,7 @@ matrix:
   fast_finish: true
 
 before_install:
-  - npm install --global greenkeeper-lockfile@1
+  - npm install --global greenkeeper-lockfile
 install: npm install
 before_script: greenkeeper-lockfile-update
 after_script: greenkeeper-lockfile-upload
