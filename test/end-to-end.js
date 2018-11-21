@@ -24,7 +24,8 @@ describe.skip('end-to-end tests', () => {
       const request = (secure ? https : http)[httpMethod](
         httpResourceUrl(secure),
         response => {
-          assert.isTrue(response.statusCode >= 200 && response.statusCode < 300);
+          assert.isAtLeast(response.statusCode, 200);
+          assert.isBelow(response.statusCode, 300);
 
           let buffer = Buffer.alloc(0);
 

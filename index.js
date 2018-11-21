@@ -32,8 +32,8 @@ var NPM_CONFIG_PROXY_SEARCH_ORDER = ['https-proxy', 'http-proxy', 'proxy'];
 
 // Save the original settings for restoration later.
 var ORIGINALS = {
-  http: pick(http, 'globalAgent', 'request'),
-  https: pick(https, 'globalAgent', 'request'),
+  http: pick(http, 'globalAgent', ['request', 'get']),
+  https: pick(https, 'globalAgent', ['request', 'get']),
   env: pick(process.env, ENV_VAR_PROXY_SEARCH_ORDER)
 };
 
@@ -218,8 +218,10 @@ globalTunnel.initialize = function(conf) {
     http.globalAgent = globalTunnel._makeAgent(conf, 'http', connectHttp);
     https.globalAgent = globalTunnel._makeAgent(conf, 'https', connectHttps);
 
-    http.request = globalTunnel._makeRequest(http, 'http');
-    https.request = globalTunnel._makeRequest(https, 'https');
+    http.request = globalTunnel._makeHttp('request', http, 'http');
+    https.request = globalTunnel._makeHttp('request', https, 'https');
+    http.get = globalTunnel._makeHttp('get', http, 'http');
+    https.get = globalTunnel._makeHttp('get', https, 'https');
 
     globalTunnel.isProxying = true;
     globalTunnel.proxyUrl = stringifyProxy(conf);
@@ -288,15 +290,16 @@ globalTunnel._makeAgent = function(conf, innerProtocol, useCONNECT) {
 };
 
 /**
- * Override for http.request and https.request, makes sure to default the agent
+ * Override for http/https, makes sure to default the agent
  * to the global agent. Due to how node implements it in lib/http.js, the
  * globalAgent we define won't get used (node uses a module-scoped variable,
  * not the exports field).
+ * @param {string} method 'request' or 'get', http/https methods
  * @param {string|object} options http/https request url or options
  * @param {function} [cb]
  * @private
  */
-globalTunnel._makeRequest = function(httpOrHttps, protocol) {
+globalTunnel._makeHttp = function(method, httpOrHttps, protocol) {
   return function(options, callback) {
     if (typeof options === 'string') {
       options = urlParse(options);
@@ -330,7 +333,7 @@ globalTunnel._makeRequest = function(httpOrHttps, protocol) {
         options.port
     );
 
-    return ORIGINALS[protocol].request.call(httpOrHttps, options, callback);
+    return ORIGINALS[protocol][method].call(httpOrHttps, options, callback);
   };
 };
 
