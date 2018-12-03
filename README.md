@@ -17,7 +17,7 @@ as well as the popular [`request` module](https://npmjs.org/package/request).
 
 You can install this package by just executing the following:
 
-    npm install global-tunnel-ng
+    yarn add global-tunnel-ng
 
 # Usage
 
@@ -209,7 +209,7 @@ Download via GitHub and install npm dependencies:
 ```sh
 git clone git@github.com:np-maintain/global-tunnel.git
 cd global-tunnel
-npm install
+yarn
 ```
 
 ## Testing
@@ -220,7 +220,7 @@ Tests are located in the `test/` directory.
 To run the tests:
 
 ```sh
-npm test
+yarn test
 ```
 
 # Support
