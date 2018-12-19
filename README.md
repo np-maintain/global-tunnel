@@ -200,7 +200,7 @@ to get you started.
 
 ## Development Dependencies
 
-- [node.js](http://nodejs.org) >= 0.10
+- [node.js](http://nodejs.org) >= 6
 
 ## Set-Up
 
