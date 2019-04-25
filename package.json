@@ -19,10 +19,10 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "eslint": "^5.1.0",
-    "eslint-config-prettier": "^3.0.0",
+    "eslint-config-prettier": "^4.2.0",
     "eslint-config-xo": "^0.26.0",
     "eslint-plugin-prettier": "^3.0.0",
-    "mocha": "^5.2.0",
+    "mocha": "^6.1.4",
     "prettier": "^1.13.7",
     "request": "^2.83.0",
     "sinon": "^7.2.2"
