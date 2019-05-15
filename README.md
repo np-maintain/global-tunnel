@@ -166,7 +166,7 @@ globalTunnel.initialize({
 
 ## Auto-Config
 
-If `globalTunnel.initialize` doesnt receive a configuration as its first parameter the `http_proxys` and `http_proxy` environment variables will be used.
+If `globalTunnel.initialize` doesnt receive a configuration as its first parameter the `https_proxy` and `http_proxy` environment variables will be used.
 
 If these are missing the npm configurations `https-proxy`, `http-proxy`, `proxy` will be used instead.
 
