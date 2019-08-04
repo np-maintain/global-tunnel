@@ -25,7 +25,7 @@
     "mocha": "^6.1.4",
     "prettier": "^1.13.7",
     "request": "^2.83.0",
-    "sinon": "^7.2.2"
+    "sinon": "7.3.2"
   },
   "scripts": {
     "test": "mocha test"
