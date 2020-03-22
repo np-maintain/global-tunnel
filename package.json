@@ -23,7 +23,7 @@
     "eslint-config-xo": "^0.26.0",
     "eslint-plugin-prettier": "^3.0.0",
     "mocha": "^6.1.4",
-    "prettier": "^1.13.7",
+    "prettier": "^2.0.1",
     "request": "^2.83.0",
     "sinon": "^7.2.2"
   },
