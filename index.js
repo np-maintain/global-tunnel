@@ -225,7 +225,13 @@ globalTunnel.initialize = function(conf) {
 
     globalTunnel.isProxying = true;
     globalTunnel.proxyUrl = stringifyProxy(conf);
+
+    var proxyEnableFunction = conf.proxyEnableFunction;
+    conf.proxyEnableFunction = null;
     globalTunnel.proxyConfig = clone(conf);
+    globalTunnel.proxyConfig.proxyEnableFunction = proxyEnableFunction;
+    conf.proxyEnableFunction = proxyEnableFunction;
+
   } catch (e) {
     resetGlobals();
     throw e;
@@ -271,9 +277,9 @@ var _makeAgent = function(conf, innerProtocol, useCONNECT) {
   }
 
   if (outerProtocol === 'https:') {
-    return new agents.OuterHttpsAgent(opts);
+    return new agents.OuterHttpsAgent(opts, globalTunnel);
   }
-  return new agents.OuterHttpAgent(opts);
+  return new agents.OuterHttpAgent(opts, globalTunnel);
 };
 
 /**
@@ -306,6 +312,8 @@ globalTunnel._makeHttp = function(method, httpOrHttps, protocol) {
     } else {
       options = clone(options);
     }
+    
+    var doProxy = !globalTunnel.proxyConfig.proxyEnableFunction || globalTunnel.proxyConfig.proxyEnableFunction(options);
 
     // Respect the default agent provided by node's lib/https.js
     if (
@@ -313,15 +321,20 @@ globalTunnel._makeHttp = function(method, httpOrHttps, protocol) {
       typeof options.createConnection !== 'function' &&
       (options.host || options.hostname)
     ) {
-      options.agent = options._defaultAgent || httpOrHttps.globalAgent;
+      options.agent = options._defaultAgent || (doProxy ? httpOrHttps.globalAgent : ORIGINALS[protocol].globalAgent);
+    }
+    else if(!doProxy && options.agent === httpOrHttps.globalAgent) {
+      options.agent = ORIGINALS[protocol].globalAgent;
     }
 
-    // Set the default port ourselves to prevent Node doing it based on the proxy agent protocol
-    if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
-      options.port = options.port || 443;
-    }
-    if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
-      options.port = options.port || 80;
+    if(doProxy) {
+      // Set the default port ourselves to prevent Node doing it based on the proxy agent protocol
+      if (options.protocol === 'https:' || (!options.protocol && protocol === 'https')) {
+        options.port = options.port || 443;
+      }
+      if (options.protocol === 'http:' || (!options.protocol && protocol === 'http')) {
+        options.port = options.port || 80;
+      }
     }
 
     log(

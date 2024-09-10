@@ -168,7 +168,7 @@ describe('global-proxy', function() {
     });
   });
 
-  function proxyEnabledTests(testParams) {
+  function proxyEnabledTests(conf, testParams) {
     function connected(innerProto) {
       var innerSecure = innerProto === 'https:';
 
@@ -181,12 +181,17 @@ describe('global-proxy', function() {
         sinon.assert.notCalled(tls.connect);
       }
 
-      sinon.assert.calledOnce(called);
-      if (typeof called.getCall(0).args[0] === 'object') {
-        sinon.assert.calledWith(called, sinon.match.has('port', testParams.port));
-        sinon.assert.calledWith(called, sinon.match.has('host', '10.2.3.4'));
-      } else {
-        sinon.assert.calledWith(called, testParams.port, '10.2.3.4');
+      if(testParams.proxyEnableFunction !== false) {
+        sinon.assert.calledOnce(called);
+        if (typeof called.getCall(0).args[0] === 'object') {
+          sinon.assert.calledWith(called, sinon.match.has('port', testParams.port));
+          sinon.assert.calledWith(called, sinon.match.has('host', '10.2.3.4'));
+        } else {
+          sinon.assert.calledWith(called, testParams.port, '10.2.3.4');
+        }
+      }
+      else {
+        sinon.assert.notCalled(called);
       }
 
       var isCONNECT =
@@ -195,31 +200,56 @@ describe('global-proxy', function() {
         var expectConnect = 'example.dev:' + (innerSecure ? 443 : 80);
         var whichAgent = innerSecure ? https.globalAgent : http.globalAgent;
 
-        sinon.assert.calledOnce(whichAgent.request);
-        sinon.assert.calledWith(whichAgent.request, sinon.match.has('method', 'CONNECT'));
-        sinon.assert.calledWith(
-          whichAgent.request,
-          sinon.match.has('path', expectConnect)
-        );
+        if(testParams.proxyEnableFunction !== false) {
+          sinon.assert.calledOnce(whichAgent.request);
+          sinon.assert.calledWith(whichAgent.request, sinon.match.has('method', 'CONNECT'));
+          sinon.assert.calledWith(
+            whichAgent.request,
+            sinon.match.has('path', expectConnect)
+          );
+        }
+        else {
+          sinon.assert.notCalled(whichAgent.request);
+        }
       } else {
-        sinon.assert.calledOnce(http.Agent.prototype.addRequest);
-        var req = http.Agent.prototype.addRequest.getCall(0).args[0];
+        if(testParams.proxyEnableFunction !== false) {
+          sinon.assert.calledOnce(http.Agent.prototype.addRequest);
+          var req = http.Agent.prototype.addRequest.getCall(0).args[0];
 
-        var method = req.method;
-        assert.equal(method, 'GET');
+          var method = req.method;
+          assert.equal(method, 'GET');
 
-        var path = req.path;
-        if (innerSecure) {
-          assert.match(path, new RegExp('^https://example\\.dev:443/'));
-        } else {
-          assert.match(path, new RegExp('^http://example\\.dev:80/'));
+          var path = req.path;
+          if (innerSecure) {
+            assert.match(path, new RegExp('^https://example\\.dev:443/'));
+          } else {
+            assert.match(path, new RegExp('^http://example\\.dev:80/'));
+          }
+        }
+        else {
+          sinon.assert.notCalled(http.Agent.prototype.addRequest);
         }
       }
     }
 
     var localSandbox;
+
+    before(function() {
+      localSandbox = localSandbox || sinon.createSandbox();
+      if(testParams.proxyEnableFunction === true) {
+        conf.proxyEnableFunction = localSandbox.stub().returns(true);
+      }
+      if(testParams.proxyEnableFunction === false) {
+        conf.proxyEnableFunction = localSandbox.stub().returns(false);
+      }
+      globalTunnel.initialize(conf);
+    });
+    after(function() {
+      globalTunnel.end();
+    });
+
     beforeEach(function() {
-      localSandbox = sinon.createSandbox();
+      localSandbox = localSandbox || sinon.createSandbox();
       if (testParams.connect === 'both') {
         localSandbox.spy(http.globalAgent, 'request');
       }
@@ -229,6 +259,7 @@ describe('global-proxy', function() {
     });
     afterEach(function() {
       localSandbox.restore();
+      localSandbox = null;
     });
 
     it('(got proxying set up)', function() {
@@ -236,33 +267,43 @@ describe('global-proxy', function() {
     });
 
     describe('with the request library', function() {
-      it('will proxy http requests', function(done) {
+      it('will' + (testParams.proxyEnableFunction === false ? ' not' : '') + ' proxy http requests', function(done) {
         assert.isTrue(globalTunnel.isProxying);
         var dummyCb = sinon.stub();
         request.get('http://example.dev/', dummyCb);
         setImmediate(function() {
           connected('http:');
-          sinon.assert.notCalled(globalHttpAgent.addRequest);
+          if(testParams.proxyEnableFunction !== false) {
+            sinon.assert.notCalled(globalHttpAgent.addRequest);
+          }
+          else {
+            sinon.assert.calledOnce(globalHttpAgent.addRequest);
+          }
           sinon.assert.notCalled(globalHttpsAgent.addRequest);
           done();
         });
       });
 
-      it('will proxy https requests', function(done) {
+      it('will' + (testParams.proxyEnableFunction === false ? ' not' : '') + ' proxy https requests', function(done) {
         assert.isTrue(globalTunnel.isProxying);
         var dummyCb = sinon.stub();
         request.get('https://example.dev/', dummyCb);
         setImmediate(function() {
           connected('https:');
           sinon.assert.notCalled(globalHttpAgent.addRequest);
-          sinon.assert.notCalled(globalHttpsAgent.addRequest);
+          if(testParams.proxyEnableFunction !== false) {
+            sinon.assert.notCalled(globalHttpsAgent.addRequest);
+          }
+          else {
+            sinon.assert.calledOnce(globalHttpsAgent.addRequest);
+          }
           done();
         });
       });
     });
 
     describe('using raw request interface', function() {
-      function rawRequest(useHostname) {
+      it('will' + (testParams.proxyEnableFunction === false ? ' not' : '') + ' proxy http requests', function() {
         var req = http.request(
           replaceHostByHostname(useHostname, {
             method: 'GET',
@@ -274,7 +315,12 @@ describe('global-proxy', function() {
         req.end();
 
         connected('http:');
-        sinon.assert.notCalled(globalHttpAgent.addRequest);
+        if(testParams.proxyEnableFunction !== false) {
+          sinon.assert.notCalled(globalHttpAgent.addRequest);
+        }
+        else {
+          sinon.assert.calledOnce(globalHttpAgent.addRequest);
+        }
         sinon.assert.notCalled(globalHttpsAgent.addRequest);
       }
       it('will proxy http requests (`host`)', function() {
@@ -284,7 +330,7 @@ describe('global-proxy', function() {
         rawRequest(true);
       });
 
-      it('will proxy https requests', function() {
+      it('will' + (testParams.proxyEnableFunction === false ? ' not' : '') + ' proxy https requests', function() {
         var req = https.request(
           replaceHostByHostname(false, {
             method: 'GET',
@@ -297,7 +343,12 @@ describe('global-proxy', function() {
 
         connected('https:');
         sinon.assert.notCalled(globalHttpAgent.addRequest);
-        sinon.assert.notCalled(globalHttpsAgent.addRequest);
+        if(testParams.proxyEnableFunction !== false) {
+          sinon.assert.notCalled(globalHttpsAgent.addRequest);
+        }
+        else {
+          sinon.assert.calledOnce(globalHttpsAgent.addRequest);
+        }
       });
 
       it('request respects explicit agent param', function() {
@@ -357,13 +408,6 @@ describe('global-proxy', function() {
   }
 
   function enabledBlock(conf, testParams) {
-    before(function() {
-      globalTunnel.initialize(conf);
-    });
-    after(function() {
-      globalTunnel.end();
-    });
-
     testParams = assign(
       {
         port: conf && conf.port,
@@ -373,7 +417,23 @@ describe('global-proxy', function() {
       testParams
     );
 
-    proxyEnabledTests(testParams);
+    describe('no proxyEnableFunction', function() {
+      proxyEnabledTests(conf, testParams);
+    });
+    if(conf) {
+      describe('with proxyEnableFunction returning false (i.e. disabling proxy for this call)', function() {
+        var testParamsWithFalsyProxyEnableFunction = assign({
+          proxyEnableFunction: false
+        }, testParams);
+        proxyEnabledTests(conf, testParamsWithFalsyProxyEnableFunction);
+      });
+      describe('with proxyEnableFunction returning true (i.e. enabling proxy for this call)', function() {
+        var testParamsWithFalsyProxyEnableFunction = assign({
+          proxyEnableFunction: true
+        }, testParams);
+        proxyEnabledTests(conf, testParamsWithFalsyProxyEnableFunction);
+      });
+    }
   }
 
   describe('with http proxy in intercept mode', function() {
